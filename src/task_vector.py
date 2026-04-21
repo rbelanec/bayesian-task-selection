@@ -3,6 +3,8 @@
 import torch
 from safetensors.torch import load_file
 
+from transformers import AutoModelForCausalLM
+
 
 def symmetric_difference(A: list, B: list):
     """Returns the symmetric difference between two lists."""
@@ -12,14 +14,11 @@ def symmetric_difference(A: list, B: list):
 class TaskVector:
     def __init__(
         self,
-        model_name,
         pretrained_checkpoint=None,
         finetuned_checkpoint=None,
         vector=None,
         target_modules=None,
     ):
-        self.model_name = model_name
-
         if vector is not None:
             self.vector = vector
         else:
@@ -29,10 +28,10 @@ class TaskVector:
 
             with torch.no_grad():
                 # load pretrained weights
-                pretrained_state_dict = self._safe_load(pretrained_checkpoint)
+                pretrained_state_dict = self._safe_load(f"{pretrained_checkpoint}/adapter_model.safetensors")
 
                 # load finetuned weights
-                finetuned_state_dict = self._safe_load(finetuned_checkpoint)
+                finetuned_state_dict = self._safe_load(f"{finetuned_checkpoint}/adapter_model.safetensors")
 
             assert pretrained_state_dict.keys() == finetuned_state_dict.keys(), (
                 f"Pretrained and finetuned checkpoints have different keys: {symmetric_difference(pretrained_state_dict.keys(), finetuned_state_dict.keys())}"
@@ -119,3 +118,29 @@ class TaskVector:
     def norm(self):
         """Norm of a task vector."""
         return torch.sqrt(self.dot(self))
+    
+    def _load_checkpoint(self, checkpoint_path):
+        model = AutoModelForCausalLM.from_pretrained(checkpoint_path, torch_dtype=torch.float16)
+        return model
+
+    def apply_to(self, pretrained_checkpoint, scaling_coef=1.0, args=None):
+        """Apply a task vector to a pretrained model."""
+        with torch.no_grad():
+            pretrained_model = self._load_checkpoint(pretrained_checkpoint)
+            device = args["device"] if isinstance(args, dict) else args.device
+            pretrained_model = pretrained_model.to(device)
+
+            new_state_dict = {}
+            pretrained_state_dict = pretrained_model.state_dict()
+            for key in pretrained_state_dict:
+                if key not in self.vector:
+                    print(
+                        f"Warning: key {key} is present in the pretrained state dict but not in the task vector"
+                    )
+                    new_state_dict[key] = pretrained_state_dict[key].to(device)
+                else:
+                    new_state_dict[key] = (
+                        pretrained_state_dict[key].to(self.vector[key].device) + scaling_coef * self.vector[key]
+                    )
+        pretrained_model.load_state_dict(new_state_dict)
+        return pretrained_model
