@@ -17,10 +17,14 @@ fig, ax = plt.subplots(figsize=(14, 6))
 
 for i, method in enumerate(methods):
     values = [
-        df[(df["dataset"] == d) & (df["peft_method"] == method)]["exact_match"].values[0]
+        df[(df["dataset"] == d) & (df["peft_method"] == method)]["exact_match"].values[
+            0
+        ]
         for d in datasets
     ]
-    bars = ax.bar(x + i * width, values, width, label=method, color=colors[method], alpha=0.85)
+    bars = ax.bar(
+        x + i * width, values, width, label=method, color=colors[method], alpha=0.85
+    )
 
 ax.set_xlabel("Dataset", fontsize=12)
 ax.set_ylabel("Accuracy", fontsize=12)

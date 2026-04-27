@@ -28,10 +28,17 @@ class TaskVector:
 
             with torch.no_grad():
                 # load pretrained weights
-                pretrained_state_dict = self._safe_load(f"{pretrained_checkpoint}/adapter_model.safetensors")
+                pretrained_state_dict = AutoModelForCausalLM.from_pretrained(
+                    pretrained_checkpoint
+                ).state_dict()
 
                 # load finetuned weights
-                finetuned_state_dict = self._safe_load(f"{finetuned_checkpoint}/adapter_model.safetensors")
+                finetuned_state_dict = AutoModelForCausalLM.from_pretrained(
+                    finetuned_checkpoint
+                ).state_dict()
+                
+                # print(f"Pretrained checkpoint keys: {pretrained_state_dict.keys()}")
+                # print(f"Finetuned checkpoint keys: {finetuned_state_dict.keys()}")
 
             assert pretrained_state_dict.keys() == finetuned_state_dict.keys(), (
                 f"Pretrained and finetuned checkpoints have different keys: {symmetric_difference(pretrained_state_dict.keys(), finetuned_state_dict.keys())}"
@@ -39,10 +46,10 @@ class TaskVector:
 
             self.vector = {}
             for key in pretrained_state_dict:
-                if pretrained_state_dict[key].dtype == torch.int64:
-                    continue
-                if pretrained_state_dict[key].dtype == torch.uint8:
-                    continue
+                # if pretrained_state_dict[key].dtype == torch.int64:
+                #     continue
+                # if pretrained_state_dict[key].dtype == torch.uint8:
+                #     continue
 
                 if target_modules is not None and not any(
                     target_module in key for target_module in target_modules
@@ -118,9 +125,11 @@ class TaskVector:
     def norm(self):
         """Norm of a task vector."""
         return torch.sqrt(self.dot(self))
-    
+
     def _load_checkpoint(self, checkpoint_path):
-        model = AutoModelForCausalLM.from_pretrained(checkpoint_path, torch_dtype=torch.float16)
+        model = AutoModelForCausalLM.from_pretrained(
+            checkpoint_path, torch_dtype=torch.float16
+        )
         return model
 
     def apply_to(self, pretrained_checkpoint, scaling_coef=1.0, args=None):
@@ -134,13 +143,11 @@ class TaskVector:
             pretrained_state_dict = pretrained_model.state_dict()
             for key in pretrained_state_dict:
                 if key not in self.vector:
-                    print(
-                        f"Warning: key {key} is present in the pretrained state dict but not in the task vector"
-                    )
                     new_state_dict[key] = pretrained_state_dict[key].to(device)
                 else:
                     new_state_dict[key] = (
-                        pretrained_state_dict[key].to(self.vector[key].device) + scaling_coef * self.vector[key]
+                        pretrained_state_dict[key].to(self.vector[key].device)
+                        + scaling_coef * self.vector[key]
                     )
         pretrained_model.load_state_dict(new_state_dict)
         return pretrained_model
