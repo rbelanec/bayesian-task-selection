@@ -2,6 +2,7 @@
 
 # orignal prelimianry experiments
 datasets=(mnli qnli qqp sst2 record)
+# datasets=(sst2)
 # peft_methods=(lora base)
 peft_methods=(base)
 models=(llama-3.2-1b-instruct)

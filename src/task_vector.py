@@ -36,7 +36,7 @@ class TaskVector:
                 finetuned_state_dict = AutoModelForCausalLM.from_pretrained(
                     finetuned_checkpoint
                 ).state_dict()
-                
+
                 # print(f"Pretrained checkpoint keys: {pretrained_state_dict.keys()}")
                 # print(f"Finetuned checkpoint keys: {finetuned_state_dict.keys()}")
 
@@ -46,11 +46,6 @@ class TaskVector:
 
             self.vector = {}
             for key in pretrained_state_dict:
-                # if pretrained_state_dict[key].dtype == torch.int64:
-                #     continue
-                # if pretrained_state_dict[key].dtype == torch.uint8:
-                #     continue
-
                 if target_modules is not None and not any(
                     target_module in key for target_module in target_modules
                 ):
@@ -128,7 +123,7 @@ class TaskVector:
 
     def _load_checkpoint(self, checkpoint_path):
         model = AutoModelForCausalLM.from_pretrained(
-            checkpoint_path, torch_dtype=torch.float16
+            checkpoint_path, torch_dtype=torch.float32
         )
         return model
 
@@ -142,12 +137,15 @@ class TaskVector:
             new_state_dict = {}
             pretrained_state_dict = pretrained_model.state_dict()
             for key in pretrained_state_dict:
+                pretrained_tensor = pretrained_state_dict[key]
                 if key not in self.vector:
-                    new_state_dict[key] = pretrained_state_dict[key].to(device)
+                    new_state_dict[key] = pretrained_tensor
                 else:
+                    tv_tensor = self.vector[key].to(
+                        device=pretrained_tensor.device, dtype=torch.float32
+                    )
                     new_state_dict[key] = (
-                        pretrained_state_dict[key].to(self.vector[key].device)
-                        + scaling_coef * self.vector[key]
+                        pretrained_tensor.to(torch.float32) + scaling_coef * tv_tensor
                     )
         pretrained_model.load_state_dict(new_state_dict)
         return pretrained_model
