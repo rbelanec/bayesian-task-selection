@@ -1,6 +1,7 @@
 #!/bin/bash
 
-peft_methods=(lora base)
+# peft_methods=(lora base)  # base/lora snapshots already generated (or symlink them)
+peft_methods=(freeze)
 models=(llama-3.2-1b-instruct)
 seeds=(42)
 

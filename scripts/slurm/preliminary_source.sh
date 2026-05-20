@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # orignal prelimianry experiments
-datasets=(mnli qnli qqp sst2 record)
-# datasets=(sst2)
+# datasets=(mnli qnli qqp sst2 record)
+datasets=(mnli qnli)
 # peft_methods=(lora base)
-peft_methods=(base)
+peft_methods=(freeze base)
 models=(llama-3.2-1b-instruct)
 
 # test with larger model (to see wheter the trainnig uses less ram)
@@ -15,7 +15,7 @@ models=(llama-3.2-1b-instruct)
 saves_output_dir="saves_bts_preliminary"
 logging_dir="logs_bts_preliminary"
 seeds=(42)
-EPOCHS=5
+EPOCHS=1
 
 for s in ${seeds[@]};
 do

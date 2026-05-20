@@ -1,7 +1,8 @@
 #!/bin/bash
 
 datasets=(sst2)
-peft_methods=(lora base)
+# peft_methods=(lora base)
+peft_methods=(freeze)
 models=(llama-3.2-1b-instruct)
 saves_output_dir="saves_bts_preliminary"
 seeds=(42)

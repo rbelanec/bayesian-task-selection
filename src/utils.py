@@ -14,6 +14,11 @@ METHODS_TO_TARGET_MODULES = {
     # the embedding delta is a task-agnostic shared drift that amplifies destructively
     # under a single global merge coefficient. See figures/amplification/README.md.
     "base": ["self_attn", "mlp"],
+    # `freeze` = full FT with embeddings frozen (lever B). Same filter as base so the two
+    # are an apples-to-apples ablation (differ only in training, not in what's merged).
+    # Embeddings have an exactly-zero delta here, so `None` (merge everything trained) would
+    # be equivalent up to the negligible per-block layernorm deltas this filter drops.
+    "freeze": ["self_attn", "mlp"],
 }
 
 
