@@ -225,6 +225,7 @@ def run_eval(
                             print(f"Evaluating on task: {task} with scaling coefficient: {scaling_coef:.2f}")
                             trainer, gen_kwargs = trainers[task]
                             acc_dict[task] = predict_accuracy(trainer, dataset_modules[task], gen_kwargs)
+                            print(f"Accuracy for task {task} at scaling coefficient {scaling_coef:.2f}: {acc_dict[task]:.4f}")
 
                         avg_acc = sum(acc_dict.values()) / len(acc_dict)
                         acc_coef.setdefault(scaling_coef, {}).update(acc_dict)

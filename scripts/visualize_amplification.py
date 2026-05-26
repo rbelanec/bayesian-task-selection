@@ -1,4 +1,4 @@
-"""Visualize and compare task-vector "amplification" for base (full FT) vs LoRA.
+"""Visualize and compare task-vector "amplification" for full FT (base / freeze) vs LoRA.
 
 Amplification of a set of task vectors S for a parameter group g is
 
@@ -12,11 +12,12 @@ group whose amplification is much higher than the others gets systematically
 over-driven. For full fine-tuning that group is the (tied) embeddings; LoRA never
 touches them.
 
-tau_t for base   : theta_finetuned(t) - theta_pretrained          (per weight tensor)
-tau_t for LoRA   : (alpha / r) * B_t @ A_t                          (effective dW per module)
-
-Both reduce to weight-space deltas of the same shape for k_proj / v_proj, so the
-amplification is directly comparable.
+Methods compared (all reduce to weight-space deltas of the same shape per tensor):
+  * base   : full FT.                tau_t = theta_finetuned(t) - theta_pretrained
+  * freeze : full FT, embeddings frozen (lever B). Same as base but embed/lm_head/final
+             norm have an *exactly-zero* delta, so their amplification is undefined
+             (0/0) and is reported as "frozen" rather than plotted.
+  * lora   : tau_t = (alpha / r) * B_t @ A_t  (effective dW per adapted module).
 
 All amplifications are derived from per-group Gram matrices G[i, j] = <tau_i, tau_j>
 (Frobenius inner product), so any task subset is cheap to evaluate without re-reading
@@ -25,6 +26,7 @@ the checkpoints.
 Usage:
     PYTHONPATH=src python scripts/visualize_amplification.py \
         --tasks mnli qnli qqp sst2 record \
+        --methods base freeze \
         --model llama-3.2-1b-instruct --seed 42 \
         --out-dir figures/amplification
 """
@@ -43,11 +45,29 @@ import numpy as np
 import torch
 from safetensors import safe_open
 
-# Parameter groups for the *base* (full fine-tuning) task vector. A key may belong to
+# Parameter groups for a *full-model* (base / freeze) task vector. A key may belong to
 # several groups (e.g. k_proj is in both "attn" and the "attn(k/v)" subset that lines
 # up with the LoRA target modules).
 BASE_GROUPS = ["attn(k/v)", "attn", "mlp", "embed", "norm"]
 CHUNK_ROWS = 8192  # row-chunk size for streaming large 2D tensors (keeps RAM bounded)
+
+# Stable colors per parameter group + how each method is distinguished from the others
+# (full-FT methods share group colors; linestyle / hatch separate base from freeze).
+GROUP_COLOR = {
+    "embed": "#e6550d", "attn(k/v)": "#3182bd", "attn": "#6baed6",
+    "mlp": "#08519c", "norm": "#a1d99b",
+}
+GROUP_MARKER = {"embed": "o", "attn(k/v)": "s", "attn": "s", "mlp": "^", "norm": "v"}
+METHOD_LS = {"base": "-", "freeze": "-.", "lora": "-"}
+METHOD_HATCH = {"base": "", "freeze": "//", "lora": ""}
+LORA_COLOR = "#d62728"
+
+
+def series_style(method: str, group: str):
+    """(color, linestyle, marker) for one (method, group) series."""
+    if method == "lora":
+        return LORA_COLOR, "-", "D"
+    return GROUP_COLOR[group], METHOD_LS.get(method, "-"), GROUP_MARKER[group]
 
 
 def base_groups_of(key: str) -> list[str]:
@@ -71,7 +91,7 @@ def _iter_chunks(numel_dim0: int):
 
 
 def base_gram(pre_path: str, ft_paths: list[str]) -> dict[str, np.ndarray]:
-    """Per-group Gram matrices of base task vectors, streamed chunk-by-chunk."""
+    """Per-group Gram matrices of full-model task vectors, streamed chunk-by-chunk."""
     T = len(ft_paths)
     fpre = safe_open(pre_path, framework="pt")
     ffts = [safe_open(p, framework="pt") for p in ft_paths]
@@ -154,16 +174,30 @@ def cosine_matrix(G: np.ndarray) -> np.ndarray:
     return G / np.outer(d, d)
 
 
+def iter_series(full_grams: dict[str, dict[str, np.ndarray]], lora_g):
+    """Yield (method, group, G) across all full-FT methods then lora, in display order."""
+    for method, gd in full_grams.items():
+        for g in BASE_GROUPS:
+            yield method, g, gd[g]
+    if lora_g is not None:
+        yield "lora", "attn(k/v)", lora_g["attn(k/v)"]
+
+
 # ---------------------------------------------------------------------------- #
 # discovery
 # ---------------------------------------------------------------------------- #
-def find_base(model: str, seed: int, tasks: list[str]):
-    pre = f"saves_pretrained_weights/base/{model}/pretrained_weights_{seed}/model.safetensors"
+def find_full(method: str, model: str, seed: int, tasks: list[str]):
+    """Locate the pretrained reference + per-task checkpoints for a full-model method
+    (base or freeze). Raises FileNotFoundError if anything is missing so the caller can
+    skip the method gracefully."""
+    pre = f"saves_pretrained_weights/{method}/{model}/pretrained_weights_{seed}/model.safetensors"
+    if not os.path.exists(pre):
+        raise FileNotFoundError(f"no {method} pretrained reference at {pre}")
     ft = []
     for t in tasks:
-        m = sorted(glob.glob(f"saves_bts_preliminary/base/{model}/train_{t}_{seed}_*/model.safetensors"))
+        m = sorted(glob.glob(f"saves_bts_preliminary/{method}/{model}/train_{t}_{seed}_*/model.safetensors"))
         if not m:
-            raise FileNotFoundError(f"no base checkpoint for task {t}")
+            raise FileNotFoundError(f"no {method} checkpoint for task {t}")
         ft.append(m[0])
     return pre, ft
 
@@ -182,25 +216,38 @@ def find_lora(model: str, seed: int, tasks: list[str]):
 # ---------------------------------------------------------------------------- #
 # plotting
 # ---------------------------------------------------------------------------- #
-def plot_bars(base_g, lora_g, tasks, out_dir):
+def plot_bars(full_grams, lora_g, tasks, out_dir):
     T = len(tasks)
     full = tuple(range(T))
-    series = [(f"base / {g}", base_g[g]) for g in BASE_GROUPS]
-    series.append(("lora / attn(k/v)", lora_g["attn(k/v)"]))
-    labels = [s[0] for s in series]
-    amps = [amplification(s[1], full) for s in series]
-    colors = ["#6baed6", "#3182bd", "#08519c", "#e6550d", "#a1d99b", "#d62728"]
+    rows = [
+        (f"{method} / {g}", method, g, amplification(G, full))
+        for method, g, G in iter_series(full_grams, lora_g)
+    ]
+    labels = [r[0] for r in rows]
+    colors = [series_style(r[1], r[2])[0] for r in rows]
+    # frozen groups (freeze/embed, freeze/norm-if-zero) have NaN amplification: draw a
+    # zero-height bar and annotate, so the category is visibly present but marked frozen.
+    heights = [r[3] if np.isfinite(r[3]) else 0.0 for r in rows]
 
-    fig, ax = plt.subplots(figsize=(9, 5))
-    bars = ax.bar(range(len(series)), amps, color=colors[: len(series)])
+    fig, ax = plt.subplots(figsize=(max(9, 1.0 * len(rows)), 5))
+    bars = ax.bar(range(len(rows)), heights, color=colors)
+    for b, r in zip(bars, rows):
+        h = METHOD_HATCH.get(r[1], "")
+        if h:
+            b.set_hatch(h)
     ax.axhline(1.0, ls="--", c="gray", lw=1, label="1.0 = orthogonal (clean addition)")
     ax.axhline(np.sqrt(T), ls=":", c="black", lw=1, label=f"√{T} = fully aligned")
-    ax.set_xticks(range(len(series)))
+    ax.set_xticks(range(len(rows)))
     ax.set_xticklabels(labels, rotation=30, ha="right")
     ax.set_ylabel("amplification  ‖Στ‖ / √Σ‖τ‖²")
     ax.set_title(f"Task-vector amplification, all {T} tasks merged\n({', '.join(tasks)})")
-    for b, v in zip(bars, amps):
-        ax.text(b.get_x() + b.get_width() / 2, v + 0.01, f"{v:.2f}", ha="center", va="bottom", fontsize=9)
+    for b, r in zip(bars, rows):
+        if np.isfinite(r[3]):
+            ax.text(b.get_x() + b.get_width() / 2, r[3] + 0.01, f"{r[3]:.2f}",
+                    ha="center", va="bottom", fontsize=9)
+        else:
+            ax.text(b.get_x() + b.get_width() / 2, 0.03, "frozen\nΔ=0",
+                    ha="center", va="bottom", fontsize=8, color="gray")
     ax.legend()
     fig.tight_layout()
     for ext in ("png", "pdf"):
@@ -208,28 +255,20 @@ def plot_bars(base_g, lora_g, tasks, out_dir):
     plt.close(fig)
 
 
-def plot_vs_n(base_g, lora_g, tasks, out_dir):
+def plot_vs_n(full_grams, lora_g, tasks, out_dir):
     T = len(tasks)
-    fig, ax = plt.subplots(figsize=(8, 5))
-    style = {
-        "base / embed": ("#e6550d", "-", "o"),
-        "base / attn(k/v)": ("#3182bd", "-", "s"),
-        "base / attn": ("#6baed6", "--", "s"),
-        "base / mlp": ("#08519c", "--", "^"),
-        "base / norm": ("#a1d99b", "--", "v"),
-        "lora / attn(k/v)": ("#d62728", "-", "D"),
-    }
-    series = {f"base / {g}": base_g[g] for g in BASE_GROUPS}
-    series["lora / attn(k/v)"] = lora_g["attn(k/v)"]
     ns = list(range(2, T + 1))
-    for name, G in series.items():
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    for method, g, G in iter_series(full_grams, lora_g):
         data = amp_vs_n(G, T)
         mean = [data[n][0] for n in ns]
+        if not np.all(np.isfinite(mean)):
+            continue  # frozen / zero-delta group (e.g. freeze/embed) -> nothing to plot
         lo = [data[n][1] for n in ns]
         hi = [data[n][2] for n in ns]
-        c, ls, mk = style[name]
-        ax.plot(ns, mean, ls=ls, marker=mk, color=c, label=name)
-        ax.fill_between(ns, lo, hi, color=c, alpha=0.12)
+        c, ls, mk = series_style(method, g)
+        ax.plot(ns, mean, ls=ls, marker=mk, color=c, label=f"{method} / {g}")
+        ax.fill_between(ns, lo, hi, color=c, alpha=0.10)
     ax.plot(ns, np.sqrt(ns), ls=":", c="black", lw=1, label="√N (fully aligned)")
     ax.axhline(1.0, ls="--", c="gray", lw=1, label="1.0 (orthogonal)")
     ax.set_xticks(ns)
@@ -243,13 +282,19 @@ def plot_vs_n(base_g, lora_g, tasks, out_dir):
     plt.close(fig)
 
 
-def plot_heatmaps(base_g, lora_g, tasks, out_dir):
-    panels = [
-        ("base / embed", base_g["embed"]),
-        ("base / attn(k/v)", base_g["attn(k/v)"]),
-        ("lora / attn(k/v)", lora_g["attn(k/v)"]),
-    ]
+def plot_heatmaps(full_grams, lora_g, tasks, out_dir):
+    panels = []
+    for method, gd in full_grams.items():
+        panels.append((f"{method} / embed", gd["embed"]))
+        panels.append((f"{method} / attn(k/v)", gd["attn(k/v)"]))
+    if lora_g is not None:
+        panels.append(("lora / attn(k/v)", lora_g["attn(k/v)"]))
+    # drop panels with no signal (e.g. freeze/embed, whose Gram is identically zero)
+    panels = [(t, G) for (t, G) in panels if np.any(np.diag(G) > 0)]
+
     fig, axes = plt.subplots(1, len(panels), figsize=(4.2 * len(panels), 4))
+    if len(panels) == 1:
+        axes = [axes]
     for ax, (title, G) in zip(axes, panels):
         C = cosine_matrix(G)
         im = ax.imshow(C, vmin=-0.1, vmax=0.6, cmap="coolwarm")
@@ -269,34 +314,38 @@ def plot_heatmaps(base_g, lora_g, tasks, out_dir):
     plt.close(fig)
 
 
-def write_summary(base_g, lora_g, tasks, out_dir):
+def write_summary(full_grams, lora_g, tasks, out_dir):
     T = len(tasks)
     full = tuple(range(T))
-    rows = []
-    for g in BASE_GROUPS:
-        rows.append(("base", g, amplification(base_g[g], full)))
-    rows.append(("lora", "attn(k/v)", amplification(lora_g["attn(k/v)"], full)))
+    rows = [(method, g, amplification(G, full)) for method, g, G in iter_series(full_grams, lora_g)]
 
     print(f"\nAmplification with all {T} tasks merged ({', '.join(tasks)}):")
     print(f"{'method':6} {'group':12} {'amp':>6}  (1.0=orthogonal, √{T}={np.sqrt(T):.2f}=aligned)")
     for method, g, a in rows:
-        flag = "  <-- over-amplified" if a > 1.2 else ""
-        print(f"{method:6} {g:12} {a:6.3f}{flag}")
+        if not np.isfinite(a):
+            print(f"{method:6} {g:12} {'n/a':>6}  (frozen / zero delta)")
+        else:
+            flag = "  <-- over-amplified" if a > 1.2 else ""
+            print(f"{method:6} {g:12} {a:6.3f}{flag}")
 
     with open(os.path.join(out_dir, "amplification_summary.csv"), "w") as f:
         f.write("method,group,n_tasks,amplification\n")
         for method, g, a in rows:
             f.write(f"{method},{g},{T},{a:.4f}\n")
-        for g in BASE_GROUPS:
-            for n, (m, lo, hi) in amp_vs_n(base_g[g], T).items():
-                f.write(f"base,{g},{n},{m:.4f}\n")
-        for n, (m, lo, hi) in amp_vs_n(lora_g["attn(k/v)"], T).items():
-            f.write(f"lora,attn(k/v),{n},{m:.4f}\n")
+        for method, gd in full_grams.items():
+            for g in BASE_GROUPS:
+                for n, (m, lo, hi) in amp_vs_n(gd[g], T).items():
+                    f.write(f"{method},{g},{n},{m:.4f}\n")
+        if lora_g is not None:
+            for n, (m, lo, hi) in amp_vs_n(lora_g["attn(k/v)"], T).items():
+                f.write(f"lora,attn(k/v),{n},{m:.4f}\n")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tasks", nargs="+", default=["mnli", "qnli", "qqp", "sst2", "record"])
+    ap.add_argument("--methods", nargs="+", default=["base", "freeze"],
+                    help="full-FT methods to include (computed like base); lora is always added")
     ap.add_argument("--model", default="llama-3.2-1b-instruct")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out-dir", default="figures/amplification")
@@ -304,18 +353,30 @@ def main():
 
     os.makedirs(args.out_dir, exist_ok=True)
 
-    print("Computing base Gram matrices (streaming full-model deltas)...")
-    pre, ft = find_base(args.model, args.seed, args.tasks)
-    base_g = base_gram(pre, ft)
+    full_grams: dict[str, dict[str, np.ndarray]] = {}
+    for method in args.methods:
+        try:
+            pre, ft = find_full(method, args.model, args.seed, args.tasks)
+        except FileNotFoundError as e:
+            print(f"[skip] {method}: {e}")
+            continue
+        print(f"Computing {method} Gram matrices (streaming full-model deltas)...")
+        full_grams[method] = base_gram(pre, ft)
 
-    print("Computing LoRA Gram matrix (effective B@A deltas)...")
-    lora_dirs = find_lora(args.model, args.seed, args.tasks)
-    lora_g = lora_gram(lora_dirs)
+    if not full_grams:
+        raise SystemExit("no full-FT checkpoints found for any requested method")
 
-    write_summary(base_g, lora_g, args.tasks, args.out_dir)
-    plot_bars(base_g, lora_g, args.tasks, args.out_dir)
-    plot_vs_n(base_g, lora_g, args.tasks, args.out_dir)
-    plot_heatmaps(base_g, lora_g, args.tasks, args.out_dir)
+    try:
+        print("Computing LoRA Gram matrix (effective B@A deltas)...")
+        lora_g = lora_gram(find_lora(args.model, args.seed, args.tasks))
+    except FileNotFoundError as e:
+        print(f"[skip] lora: {e}")
+        lora_g = None
+
+    write_summary(full_grams, lora_g, args.tasks, args.out_dir)
+    plot_bars(full_grams, lora_g, args.tasks, args.out_dir)
+    plot_vs_n(full_grams, lora_g, args.tasks, args.out_dir)
+    plot_heatmaps(full_grams, lora_g, args.tasks, args.out_dir)
     print(f"\nSaved figures + amplification_summary.csv to {args.out_dir}/")
 
 
