@@ -30,7 +30,6 @@ from llamafactory.train.sft.metric import (
 from llamafactory.train.sft.trainer import CustomSeq2SeqTrainer
 from llamafactory.train.callbacks import LogCallback, ReporterCallback
 
-
 from llamafactory.hparams import get_train_args, read_args
 
 if TYPE_CHECKING:
@@ -40,6 +39,7 @@ if TYPE_CHECKING:
 
 
 from utils import get_task_combinations, create_vector_combination, plot_acc_coef_csv
+from metrics import TASK_COMPUTE_METRICS
 
 from transformers import AutoModelForCausalLM
 
@@ -79,7 +79,7 @@ def apply_coef_inplace(model, base_state, tv, coef):
             p.copy_(base_state[name] + coef * tv[name])
 
 
-def build_trainer(model, template, dataset_module, tokenizer_module, data_args, model_args,
+def build_trainer(task, model, template, dataset_module, tokenizer_module, data_args, model_args,
                   training_args, finetuning_args, generating_args, callbacks):
     """Build a Trainer + gen_kwargs for one eval dataset.
 
@@ -87,6 +87,9 @@ def build_trainer(model, template, dataset_module, tokenizer_module, data_args, 
     weights are mutated in place). Constructing a fresh Trainer/Accelerator per
     coefficient was the second leak: each one registers forward hooks and pushes state
     into accelerate's global singletons that are never torn down.
+
+    `task` selects the compute_metrics: ReCoRD needs the SuperGLUE record metric
+    (multi-answer, grouped by `idx`) rather than per-row exact-match accuracy.
     """
     tokenizer = tokenizer_module["tokenizer"]
 
@@ -107,7 +110,11 @@ def build_trainer(model, template, dataset_module, tokenizer_module, data_args, 
         metric_module["compute_metrics"] = ComputeSimilarity(tokenizer=tokenizer)
 
         if finetuning_args.compute_classification_metrics:
-            metric_module["compute_metrics"] = ComputeClassification(tokenizer=tokenizer)
+            # Tasks listed in TASK_COMPUTE_METRICS override the default with a
+            # task-specific metric (e.g. ReCoRD). Anything else falls back to
+            # plain exact-match classification accuracy.
+            metric_cls = TASK_COMPUTE_METRICS.get(task, ComputeClassification)
+            metric_module["compute_metrics"] = metric_cls(tokenizer=tokenizer)
     elif finetuning_args.compute_accuracy:
         metric_module["compute_metrics"] = ComputeAccuracy()
         metric_module["preprocess_logits_for_metrics"] = eval_logit_processor
@@ -205,7 +212,7 @@ def run_eval(
                     # --- Build one Trainer per task, reused across all coefficients ---
                     trainers = {
                         task: build_trainer(
-                            merged_model, template, dataset_modules[task], tokenizer_module,
+                            task, merged_model, template, dataset_modules[task], tokenizer_module,
                             data_args, model_args, training_args, finetuning_args,
                             generating_args, callbacks,
                         )
