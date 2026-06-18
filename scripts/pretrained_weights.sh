@@ -7,8 +7,6 @@ seeds=(42)
 
 saves_output_dir="saves_pretrained_weights"
 
-EPOCHS=0
-
 for s in ${seeds[@]};
 do
     for m in ${models[@]};
@@ -17,12 +15,12 @@ do
         do
             TIMESTAMP=`date +%s`
             OUTPUT_DIR="${saves_output_dir}/${pm}/${m}/pretrained_weights_${s}"
-            DATASET="sst2" # dumy dataset, not used for training since EPOCHS=0
+            DATASET="sst2" # dummy dataset, not used for training since pre.yaml pins num_train_epochs: 0
             SEED="${s}"
 
             mkdir -p ${OUTPUT_DIR}
 
-            export OUTPUT_DIR DATASET SEED EPOCHS
+            export OUTPUT_DIR DATASET SEED
             envsubst < config_templates/${pm}/${m}/pre.yaml > ${OUTPUT_DIR}/pre.yaml
 
             llamafactory-cli train ${OUTPUT_DIR}/pre.yaml

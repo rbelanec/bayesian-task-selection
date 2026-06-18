@@ -6,7 +6,6 @@ models=(llama-3.2-1b-instruct)
 saves_output_dir="saves_bts_preliminary"
 logging_dir="logs_bts_preliminary"
 seeds=(42)
-EPOCHS=5
 
 for s in ${seeds[@]};
 do
@@ -26,7 +25,7 @@ do
                 mkdir -p ${OUTPUT_DIR}
                 mkdir -p ${logging_dir}
 
-                export OUTPUT_DIR DATASET SEED WANDB_PROJECT WANDB_NAME EPOCHS
+                export OUTPUT_DIR DATASET SEED WANDB_PROJECT WANDB_NAME
 
                 envsubst < config_templates/${pm}/${m}/eval.yaml > ${OUTPUT_DIR}/eval.yaml
 

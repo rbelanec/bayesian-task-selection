@@ -18,7 +18,6 @@ datasets=(mnli qqp qnli sst2 stsb mrpc rte cola record multirc boolq wic wsc cb 
 peft_methods=(bitfit ia3 prompt-tuning lora lntuning prefix-tuning p-tuning)
 models=(llama-3-8b-instruct)
 seeds=(42 123 456 789 101112)
-EPOCHS=10
 
 for s in ${seeds[@]};
 do
@@ -37,7 +36,7 @@ do
 
                 mkdir -p ${OUTPUT_DIR}
 
-                export OUTPUT_DIR DATASET SEED WANDB_PROJECT WANDB_NAME EPOCHS
+                export OUTPUT_DIR DATASET SEED WANDB_PROJECT WANDB_NAME
                 envsubst < examples/peftbench/${pm}/${m}/train.yaml > ${OUTPUT_DIR}/train.yaml
 
                 OUTPUT_DIR="saves_multiple/${pm}/${m}/eval_${d}_${s}_${TIMESTAMP}"

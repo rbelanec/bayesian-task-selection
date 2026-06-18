@@ -19,7 +19,6 @@ datasets=(codealpacapy boolq piqa record multirc) # GPU1
 peft_methods=(prefix-tuning prompt-tuning p-tuning lora lntuning ia3)
 models=(llama-3-8b-instruct)
 seeds=(42 123 456 789 101112)
-EPOCHS=20
 
 for s in ${seeds[@]};
 do
@@ -39,7 +38,7 @@ do
 
                 mkdir -p ${OUTPUT_DIR}
 
-                export OUTPUT_DIR DATASET SEED WANDB_PROJECT WANDB_NAME EPOCHS
+                export OUTPUT_DIR DATASET SEED WANDB_PROJECT WANDB_NAME
                 envsubst < examples/peftbench/${pm}/${m}/train.yaml > ${OUTPUT_DIR}/train.yaml
 
                 OUTPUT_DIR="saves/${pm}/${m}/eval_${d}_${s}_${TIMESTAMP}"
