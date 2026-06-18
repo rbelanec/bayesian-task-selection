@@ -52,7 +52,7 @@ import torch
 
 TASKS = ["mnli", "qnli", "qqp", "sst2", "record"]
 MODELS = ["llama-3.2-1b-instruct"]
-METHODS = ["freeze"]
+METHODS = ["base"]
 SEEDS = [42]
 N_EVAL_POINTS = 41
 EARLY_STOPPING = False

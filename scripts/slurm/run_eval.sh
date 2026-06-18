@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=GPU
+#SBATCH --partition=gpu_short
 #SBATCH --account=perun250162
 #SBATCH --qos=perun250162
 #SBATCH --gres=gpu:1

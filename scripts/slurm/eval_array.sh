@@ -6,12 +6,12 @@
 #   sbatch --array=0-25 scripts/slurm/eval_array.sh
 # (5 base tasks → 26 combinations of size >=2 → indices 0..25)
 
-#SBATCH --partition=GPU
-#SBATCH --account=perun250162
-#SBATCH --qos=perun250162
+#SBATCH --partition=gpu_short
+#SBATCH --account=perun2601404
+#SBATCH --qos=perun2601404
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
-#SBATCH --time=72:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --mem=64G
 #SBATCH --job-name=eval_array
 #SBATCH -o logs_bts_merged/eval_array_%A_%a.out

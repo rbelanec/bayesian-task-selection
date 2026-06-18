@@ -15,7 +15,7 @@ use_cache: false
 stage: sft
 do_train: true
 finetuning_type: freeze
-freeze_trainable_layers: 16
+freeze_trainable_layers: 28
 freeze_trainable_modules: all
 
 ### dataset

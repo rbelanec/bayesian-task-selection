@@ -1,7 +1,7 @@
 seed: 42
 
 ### model
-model_name_or_path: meta-llama/Llama-3.2-1B-Instruct
+model_name_or_path: dummy_model_name_or_path
 trust_remote_code: true
 flash_attn: auto
 use_cache: false

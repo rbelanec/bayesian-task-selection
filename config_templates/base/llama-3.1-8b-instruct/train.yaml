@@ -10,6 +10,11 @@ use_cache: false
 stage: sft
 do_train: true
 finetuning_type: full
+# Full FT of 8B OOMs on a single 140GB H200 (~128GB static: 16 weights + 16 grads
+# + 96 AdamW fp32 master+m+v). ZeRO-2 shards optimizer states + grads across the GPUs
+# requested in the SLURM script (--gres=gpu:2), keeping adamw_torch identical to the
+# 1B/3B runs. Path is relative to the repo root (the cwd of llamafactory-cli).
+deepspeed: config_templates/deepspeed/ds_z2_config.json
 
 ### dataset
 dataset: ${DATASET}

@@ -179,3 +179,5 @@ generated_predictions.jsonl
 predictions_score.json
 experiments
 logs*
+.activate_scratch
+
