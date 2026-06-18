@@ -10,11 +10,13 @@ use_cache: false
 stage: sft
 do_train: true
 finetuning_type: full
-# Full FT of 8B OOMs on a single 140GB H200 (~128GB static: 16 weights + 16 grads
-# + 96 AdamW fp32 master+m+v). ZeRO-2 shards optimizer states + grads across the GPUs
-# requested in the SLURM script (--gres=gpu:2), keeping adamw_torch identical to the
-# 1B/3B runs. Path is relative to the repo root (the cwd of llamafactory-cli).
-deepspeed: config_templates/deepspeed/ds_z2_config.json
+# Full FT of 8B OOMs on a single 140GB H200. In bf16 it ALSO diverged to NaN: a specific
+# mnli sample tips the 8B's bf16 forward non-finite (deterministic by data order; the 3B
+# trains through the same sample fine; LR/warmup/attention all ruled out). Fix = train in
+# fp32 (bf16: false below), which needs full param+grad+optimizer sharding -> ZeRO-3
+# (~80GB/GPU of the 160GB fp32 state across the 2 GPUs from the SLURM script). Path is
+# relative to the repo root (the cwd of llamafactory-cli).
+deepspeed: config_templates/deepspeed/ds_z3_config.json
 
 ### dataset
 dataset: ${DATASET}
@@ -43,7 +45,9 @@ learning_rate: 2.0e-6
 num_train_epochs: 1
 weight_decay: 1.0e-2
 lr_scheduler_type: cosine
-bf16: true
+# fp32 (not bf16) for numerical stability: bf16 NaN'd on a specific mnli sample at 8B
+# scale. Slower + 2x activation memory, hence ZeRO-3 above. Smaller models stay bf16.
+bf16: false
 ddp_timeout: 180000000
 resume_from_checkpoint: null
 warmup_ratio: 0.1

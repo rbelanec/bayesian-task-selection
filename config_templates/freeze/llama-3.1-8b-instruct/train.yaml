@@ -21,9 +21,10 @@ freeze_trainable_layers: 32
 freeze_trainable_modules: all
 # freeze_extra_modules: left unset -> embed_tokens, lm_head (tied), final norm stay frozen
 # freeze trains all 32 decoder blocks (~7.5B of 8B params) so it OOMs like base on a
-# single H200. ZeRO-2 shards optimizer states + grads across the SLURM-requested GPUs.
-# Path is relative to the repo root (the cwd of llamafactory-cli).
-deepspeed: config_templates/deepspeed/ds_z2_config.json
+# single H200, and bf16 diverged to NaN at 8B scale (see base train.yaml). Fix = fp32
+# (bf16: false below) with ZeRO-3 full param+grad+optimizer sharding (~80GB/GPU across the
+# 2 SLURM GPUs). Path is relative to the repo root (the cwd of llamafactory-cli).
+deepspeed: config_templates/deepspeed/ds_z3_config.json
 
 ### dataset
 dataset: ${DATASET}
@@ -52,7 +53,9 @@ learning_rate: 2.0e-6
 num_train_epochs: 1
 weight_decay: 1.0e-2
 lr_scheduler_type: cosine
-bf16: true
+# fp32 (not bf16) for numerical stability: bf16 NaN'd on a specific mnli sample at 8B
+# scale. Slower + 2x activation memory, hence ZeRO-3 above. Smaller models stay bf16.
+bf16: false
 ddp_timeout: 180000000
 resume_from_checkpoint: null
 warmup_ratio: 0.1

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # orignal prelimianry experiments
-datasets=(mnli qnli qqp sst2 record)
+datasets=(mnli)
 # datasets=(qqp sst2 record)
-peft_methods=(base lora)
+peft_methods=(base)
 models=(llama-3.1-8b-instruct)
 
 # test with larger model (to see wheter the trainnig uses less ram)
@@ -55,7 +55,9 @@ do
                     *)                     SBATCH_RES="" ;;
                 esac
 
-                sbatch ${SBATCH_RES} --job-name ${pm}_${m}_${d}_${s}_${TIMESTAMP} -o ${logging_dir}/${pm}_${m}_${d}_${s}_${TIMESTAMP}.out -e ${logging_dir}/${pm}_${m}_${d}_${s}_${TIMESTAMP}.err scripts/slurm/run_train_eval.sh ${saves_output_dir}/${pm}/${m}/train_${d}_${s}_${TIMESTAMP}/train.yaml ${saves_output_dir}/${pm}/${m}/eval_${d}_${s}_${TIMESTAMP}/eval.yaml ${saves_output_dir}/${pm}/${m}/eval_${d}_${s}_${TIMESTAMP} ${d}
+                # %j in the log names is replaced by SLURM with the job (run) id at runtime,
+                # so logs are findable by job id, not just the timestamp.
+                sbatch ${SBATCH_RES} --job-name ${pm}_${m}_${d}_${s}_${TIMESTAMP} -o ${logging_dir}/${pm}_${m}_${d}_${s}_${TIMESTAMP}_%j.out -e ${logging_dir}/${pm}_${m}_${d}_${s}_${TIMESTAMP}_%j.err scripts/slurm/run_train_eval.sh ${saves_output_dir}/${pm}/${m}/train_${d}_${s}_${TIMESTAMP}/train.yaml ${saves_output_dir}/${pm}/${m}/eval_${d}_${s}_${TIMESTAMP}/eval.yaml ${saves_output_dir}/${pm}/${m}/eval_${d}_${s}_${TIMESTAMP} ${d}
 
                 sleep 1
             done

@@ -179,6 +179,31 @@ column, not of merging in general.
 
 ---
 
+## 8. Scaling to 3B / 8B — training-stability note
+
+Extending the study to `llama-3.2-3b-instruct` and `llama-3.1-8b-instruct` surfaced two
+infrastructure issues (orthogonal to the merging science, but they gate the 8B data):
+
+- **Memory.** Full FT (`base`/`freeze`) of 8B OOMs on a single 140GB H200 (~128GB static
+  in bf16: 16 weights + 16 grads + 96 AdamW). Resolved with DeepSpeed ZeRO-2 across 2 GPUs
+  (`config_templates/deepspeed/ds_z2_config.json`). 3B fits on one GPU.
+- **bf16 numerical instability (8B only).** 8B full FT in bf16 **diverges to NaN** a few
+  steps in (training loss logged as exactly `0.0`, `eval_loss: NaN`). The cause is *not*
+  data, optimization, or attention: halving LR + doubling warmup left the blow-up at the
+  identical step; eager (fp32-softmax) attention gave a bit-identical loss curve and still
+  died; a **seed change moved the failure step** (seed 42 → step 100, seed 43 → step 15),
+  and the **3B trains clean through the identical data/batch**. So a *specific* mnli
+  example tips the **8B's bf16 forward non-finite** — an 8B-only numerical knife-edge —
+  and the resulting NaN gradient poisons all weights. **Fix:** train the 8B in **fp32**
+  (`bf16: false`) with **ZeRO-3** (`config_templates/deepspeed/ds_z3_config.json`,
+  ~80GB/GPU of the 160GB fp32 state across 2 GPUs). Verified: 8B `base` mnli now clears
+  the old failure zone (step 100 loss ≈ 0.22 vs NaN), 0 zero-loss steps over 1105 logged
+  steps, `eval_loss` ≈ 0.10.
+- **Confound to footnote:** the 8B trains in fp32 while 1B/3B are bf16. Justified by the
+  bf16 instability, but worth stating when comparing across model sizes.
+
+---
+
 ## Artifacts & how to regenerate
 
 All plotting/analysis runs with the `pf` conda env python (matplotlib is not in `base`):
