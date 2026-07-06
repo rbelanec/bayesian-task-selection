@@ -89,9 +89,9 @@ class ComputeRecord:
     `predict_accuracy()` already reads — and feeds the coefficient sweep
     directly.
 
-    Exposes `accuracy = (em + f1) / 2` (the SuperGLUE ReCoRD summary score) so
-    the existing reader in `predict_accuracy()` and the per-task column in
-    `*_acc_coef.csv` keep working. Also surfaces raw `exact_match` / `f1`.
+    Exposes `accuracy = exact_match` (the grouped-by-`idx` ReCoRD EM, via
+    `compute_record`) so the existing reader in `predict_accuracy()` and the
+    per-task column in `*_acc_coef.csv` keep working. Also surfaces raw `f1`.
 
     Alignment caveat (same as the offline script): predictions are zipped to
     the validation set by enumerate index, which holds as long as the trainer's

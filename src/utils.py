@@ -1,12 +1,17 @@
 import torch
 import numpy as np
 import glob
+import json
+import logging
+import time
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 from task_vector import TaskVector
 
 from typing import Optional, Any
+
+logger = logging.getLogger(__name__)
 
 METHODS_TO_TARGET_MODULES = {
     "lora": ["lora_A", "lora_B"],
@@ -27,6 +32,72 @@ def nai(datasets, zsh, ft, merged):
     return {ds: (merged[ds] - zsh[ds]) / (ft[ds] - zsh[ds]) for ds in datasets}
 
 
+def _eval_exact_match(pattern: str) -> float:
+    """`exact_match` from the first compute_metrics.jsonl matching `pattern`.
+
+    Each line is a JSON object; we merge them (a task may log macro_f1/f1 on one
+    line and exact_match on another). `exact_match` is the correct accuracy for
+    every task, including ReCoRD — whose predict_results.json holds a wrong,
+    naive per-row number instead (see src/tests/record_metric.py).
+    """
+    hits = sorted(glob.glob(pattern))
+    if not hits:
+        raise FileNotFoundError(f"no compute_metrics.jsonl matching: {pattern}")
+    metrics: dict[str, float] = {}
+    with open(hits[0]) as f:
+        for line in f:
+            if line.strip():
+                metrics.update(json.loads(line))
+    if "exact_match" not in metrics:
+        raise KeyError(f"no 'exact_match' in {hits[0]} (have {list(metrics)})")
+    return float(metrics["exact_match"])
+
+
+def zero_shot_acc(model: str, seed: int, task: str) -> float:
+    # Pretrained-model accuracy (no fine-tuning); method-independent.
+    return _eval_exact_match(
+        f"saves_bts_preliminary/zero-shot/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl"
+    )
+
+
+def finetuned_acc(method: str, model: str, seed: int, task: str) -> float:
+    # Single-task fine-tuned accuracy (NAI's per-task ceiling).
+    return _eval_exact_match(
+        f"saves_bts_preliminary/{method}/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl"
+    )
+
+
+def merged_acc_at_best_coef(
+    method: str, model: str, seed: int, tasks: list[str]
+) -> tuple[dict[str, float], float]:
+    """Per-task merged accuracy at the shared coef maximizing mean accuracy.
+
+    Matches the "best shared coef" selection in scripts/summarize_merged.py.
+    """
+    combo = "_".join(tasks)
+    csv_path = (
+        f"saves_bts_merged/{method}/{model}/{combo}_{seed}_best/{combo}_{seed}_acc_coef.csv"
+    )
+    df = pd.read_csv(csv_path, index_col="scaling_coef").sort_index()
+    best_coef = float(df.mean(axis=1).idxmax())  # coef with best mean-over-tasks accuracy
+    row = df.loc[best_coef]
+    return {task: float(row[task]) for task in tasks}, best_coef
+
+
+def compute_nai(
+    model: str, method: str, seed: int, tasks: list[str]
+) -> dict[str, float]:
+    """Normalized Accuracy Improvement per task, loaded straight from the pipeline.
+
+    Pulls merged accuracy (at the best shared coef), single-task fine-tuned
+    accuracy, and zero-shot accuracy from saves_bts_*, then applies `nai`.
+    """
+    zsh = {task: zero_shot_acc(model, seed, task) for task in tasks}
+    ft = {task: finetuned_acc(method, model, seed, task) for task in tasks}
+    merged, _ = merged_acc_at_best_coef(method, model, seed, tasks)
+    return nai(tasks, zsh, ft, merged)
+
+
 def calc_rank(S, norm_thresh=0.95):
     # Rank based on approximation error (Eq. 6) in the paper
     rank = np.argmax(np.sqrt(np.cumsum(S.pow(2) / S.pow(2).sum())) > norm_thresh)
@@ -39,8 +110,63 @@ def alignment_ratio(S, S_proj):
 
 
 @torch.no_grad()
-def sar():
-    pass
+def sar(
+    task_vectors: list[TaskVector],
+    tasks: list[str],
+    rank_threshold: float = 0.95,
+    device: str = "cpu",
+    iso: bool = False,
+) -> dict[str, float]:
+    """Subspace Alignment Ratio (Marczak et al., iso-merging fig_3a.py).
+
+    For each 2D weight matrix, build the merged subspace from the top-k left
+    singular vectors of the summed task vector (k chosen by `calc_rank` at
+    `rank_threshold`), project each individual task vector onto that subspace,
+    and measure how much of its spectral norm survives via `alignment_ratio`
+    (Eq. 5/6). Returns the per-task mean alignment ratio over all matrices.
+
+    The reference gates on `key.startswith("model.visual")`; our task vectors
+    are already filtered to self_attn/mlp at creation, so we keep every 2D
+    matrix instead. Set `iso=True` to align against the isotropic spectrum
+    (all singular values equal to their mean) rather than the raw sum spectrum.
+    """
+    assert len(task_vectors) == len(tasks), "need one task name per task vector"
+
+    # SAR is only defined for 2D weight matrices (skip biases / norms / 1D).
+    keys_2d = [k for k in task_vectors[0].vector if task_vectors[0].vector[k].dim() == 2]
+    mode = "iso" if iso else "sum"
+    logger.info(
+        "sar[%s]: %d matrices over %d tasks on %s", mode, len(keys_2d), len(tasks), device
+    )
+    t0 = time.perf_counter()
+
+    alignment_ratios: dict[str, list[float]] = {task: [] for task in tasks}
+    for i, key in enumerate(keys_2d, 1):
+        tk = time.perf_counter()
+        _tvs = [tv.vector[key].to(device) for tv in task_vectors]
+
+        merge_by_sum = sum(_tvs)
+        U, S, _ = torch.linalg.svd(merge_by_sum, full_matrices=False)
+
+        if iso:
+            S = torch.ones_like(S) * S.mean()
+        rel_rank = calc_rank(S.cpu(), norm_thresh=rank_threshold)
+        U_k = U[:, :rel_rank]
+
+        for task, tv in zip(tasks, _tvs):
+            _, S_tv, _ = torch.linalg.svd(tv, full_matrices=False)
+            proj = torch.linalg.multi_dot((U_k, U_k.T, tv))
+            _, S_proj, _ = torch.linalg.svd(proj, full_matrices=False)
+            alignment_ratios[task].append(alignment_ratio(S_tv.cpu(), S_proj.cpu()))
+
+        logger.info(
+            "sar[%s] %d/%d %s shape=%s rank=%d (%.1fs, total %.1fs)",
+            mode, i, len(keys_2d), key, tuple(merge_by_sum.shape), rel_rank,
+            time.perf_counter() - tk, time.perf_counter() - t0,
+        )
+
+    logger.info("sar[%s]: done in %.1fs", mode, time.perf_counter() - t0)
+    return {task: float(np.mean(ar)) for task, ar in alignment_ratios.items() if ar}
 
 
 def get_task_combinations(tasks: list[str]):
@@ -83,7 +209,8 @@ def plot_acc_coef_csv(csv_path: str | Path) -> None:
     plt.close(fig)
 
 
-def create_vector_combination(model, method, seed, tasks) -> dict[str, TaskVector]:
+def build_task_vectors(model, method, seed, tasks) -> list[TaskVector]:
+    """Per-task TaskVectors for a combo (individual, not summed)."""
     pretrained_checkpoint = (
         f"saves_pretrained_weights/{method}/{model}/pretrained_weights_{seed}"
     )
@@ -107,4 +234,8 @@ def create_vector_combination(model, method, seed, tasks) -> dict[str, TaskVecto
             )
         )
 
-    return {"_".join(tasks): sum(task_vectors)}
+    return task_vectors
+
+
+def create_vector_combination(model, method, seed, tasks) -> dict[str, TaskVector]:
+    return {"_".join(tasks): sum(build_task_vectors(model, method, seed, tasks))}
