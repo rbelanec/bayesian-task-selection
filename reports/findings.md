@@ -21,6 +21,11 @@ artifacts listed at the end.*
    **not** predict merge accuracy — body cosines are uniformly ~0.02–0.08 (near
    orthogonal) yet one task can still be annihilated. A selection criterion needs more
    than geometry.
+5. **Target transfer is real and mixture-dependent (§10).** Merged source vectors can
+   match fine-tuning a held-out target directly (rte: NAI 1.00 from `mnli+qqp+sst2`;
+   mrpc: 0.93 from `mnli+qnli`) or barely help (cola: 0.19) — and each target has a
+   *different* best mixture, which is exactly the ground truth a task-selection method
+   must predict.
 
 ---
 
@@ -204,6 +209,149 @@ infrastructure issues (orthogonal to the merging science, but they gate the 8B d
 
 ---
 
+## 9. Subspace alignment (SAR) and the isotropic ("iso") baseline
+
+**What SAR measures.** When we merge by summing task vectors, the sum spans a
+*subspace* of weight-space — a set of directions the merged update can move along. A
+task is well-served by the merge only if *its* important directions lie inside that
+shared subspace; if they don't, summing simply discards them and that task degrades. The
+**subspace alignment ratio (SAR)**, from Marczak et al. (iso-merging, arXiv:2502.04959),
+quantifies this per 2D weight matrix.
+
+Concretely, for each task vector τ:
+- **Define the merged subspace.** SVD the summed task vector and keep its top-k left
+  singular vectors `U_k`, where k is the smallest rank capturing 95% of the spectral
+  energy (Eq. 6). `U_k` is an orthonormal basis for "the directions the merge actually
+  uses." (Why the top-k and not all of `U`? The tail directions carry negligible energy
+  and are mostly noise; truncating asks the sharper question "do τ's *strong* directions
+  fall in the merge's *strong* directions.")
+- **Project τ onto it.** `proj = U_k U_kᵀ τ` keeps only the part of τ that lives in the
+  merged subspace and zeroes the rest.
+- **Measure how much survived.** `SAR = ‖S_proj‖₂ / ‖S_τ‖₂` (Eq. 5), the ratio of the
+  projected matrix's spectral norm (largest singular value) to the original's. It is a
+  fraction in [0, 1]: **SAR ≈ 1** ⇒ τ lives almost entirely inside the shared subspace
+  (the merge can represent it, so it should be retained); **low SAR** ⇒ the merge subspace
+  misses τ's dominant directions (the sum is structurally unable to keep that task).
+
+We average SAR over all matrices to get one number per task. Intuitively SAR is *not*
+pairwise similarity between tasks — it asks whether a task fits in the **collective**
+subspace the sum produces, which is exactly the quantity a merge either preserves or
+throws away.
+
+**What "iso" means.** The singular values in `S` are the per-direction "stretch factors"
+of the summed task matrix along its orthogonal singular directions. A raw sum has an
+**anisotropic** spectrum — a few directions dominate, the rest are tiny — so when task
+vectors are summed those few dominant directions collide and interfere (the merge
+pathology iso-merging targets). The fix is to **flatten the spectrum**: replace every
+singular value with their common mean, `S_iso = ones_like(S) · mean(S)`. The reconstructed
+operator `U · diag(mean) · Vᵀ` then stretches *every* direction equally — no direction
+dominates. A map that scales all directions the same is **isotropic** (a sphere vs. an
+ellipsoid); hence the name. It is **not** literally "ones" — overall scale is preserved
+via the mean; only the *shape* of the spectrum is made uniform.
+
+In our `sar()` (`src/utils.py`) the `iso=True` branch uses this flattened spectrum when
+choosing the merged subspace's rank, so `sar_iso` reports alignment against the *isotropic*
+merge's subspace rather than the raw sum's. We pair SAR with **NAI** (normalized accuracy
+improvement, `(merged − zero_shot) / (finetuned − zero_shot)`) the same way the paper's
+Fig. 3a does — higher subspace alignment should track higher retained accuracy.
+
+*Artifacts:* `scripts/compute_nai_sar.py` (→ `figures/nai_sar.csv`),
+`scripts/visualize_nai_sar.py` and `scripts/visualize_nai_sar_compare.py` (NAI-vs-SAR
+scatters, the latter overlaying `sar` vs `sar_iso` per task, one figure per method).
+
+---
+
+## 10. Target-task transfer — the ground truth for task selection
+
+**Question.** Bayesian task selection must pick, for a *target* task, the source-task
+subset whose merged vector transfers best. To score any selection method we need the
+ground truth: evaluate **every** source mixture on every target and rank them.
+
+**Setup.** Four held-out targets: `mrpc` (paraphrase), `boolq` (yes/no QA), `rte`
+(NLI), `cola` (acceptability). `src/eval/eval_target.py` (launched via
+`scripts/slurm/eval_target_array.sh`, same 0–25 array indexing as the source sweep)
+rebuilds each of the 26 source-combo task vectors and sweeps the same 40-point
+coefficient grid, but evaluates the merged model on the four targets →
+`saves_bts_merged/{method}/{model}/{tasks}_{seed}_target/…_target_acc_coef.csv`.
+`scripts/summarize_target.py` ranks the combos per target by accuracy at the
+**per-target best** coefficient (`df[target].idxmax()`) and reports **NAI**
+(`(merged − zero_shot) / (finetuned − zero_shot)`; 1.0 = matches fine-tuning the
+target, 0 = no gain over pretrained). Note this uses target eval data to pick the
+coefficient — it is the transfer *ceiling*, the right ground truth for ranking
+mixtures, not a zero-target-data protocol.
+
+**Results (lora, 1B, seed 42)** — best mixture per target:
+
+| target | best mixture | coef | acc | NAI | zero-shot | single-task FT |
+|--------|--------------------|------|-------|-------|-----------|------|
+| rte    | mnli+qqp+sst2      | 0.60 | 0.755 | **1.000** | 0.256 | 0.755 |
+| mrpc   | mnli+qnli          | 0.60 | 0.762 | 0.934 | 0.005 | 0.816 |
+| boolq  | sst2+record        | 0.40 | 0.556 | 0.405 | 0.387 | 0.803 |
+| cola   | qnli+qqp+sst2      | 0.30 | 0.691 | 0.193 | 0.664 | 0.803 |
+
+**Findings.**
+
+- **Transfer can be total.** For rte, the best mixture *equals* fine-tuning rte
+  directly (NAI 1.00) without ever seeing rte training data. Every top-rte and
+  top-mrpc mixture contains `mnli` — sensible (rte is NLI; mrpc benefits from
+  entailment-style supervision) and a pattern a selection method should recover.
+- **Or nearly nothing.** cola's raw accuracy (0.691) looks fine but NAI exposes it:
+  zero-shot is already 0.664, so mixtures recover <20% of the fine-tuning gain.
+  boolq sits in between (NAI 0.41).
+- **The coefficient is critical for transfer.** boolq collapses to exact-match ≈ 0
+  past coef ~0.5–0.75 (the usual lora output-format collapse, §5) — *below* its own
+  0.387 zero-shot. The coefficient the *source* sweep selects often lands past that
+  cliff, so a mixture that transfers fine at coef 0.4 scores 0.000 at the
+  source-selected 0.85. Per-target rankings are only meaningful at per-target coefs.
+- **Distinct winners per target** (and 26-way full rankings in
+  `figures/target/target_summary.csv`) give the comparison baseline for the BTS
+  selection method: top-1 hit, top-k overlap, or rank correlation against the
+  method's predicted ordering.
+
+*Artifacts:* `figures/target/target_summary.{csv,tex}` — full per-target rankings
+(CSV: 26 combos × 4 targets per method) and the paper-ready booktabs table.
+
+---
+
+## Reproducing the pipeline end-to-end
+
+Everything runs on SLURM with the `pf` conda env. Order matters — later stages read
+the earlier stages' outputs from `saves_*` directories.
+
+```bash
+# 0. Pretrained-weight snapshots (EPOCHS=0 "fine-tune" = the task-vector origin θ_pre)
+#    -> saves_pretrained_weights/{method}/{model}/pretrained_weights_{seed}/
+bash scripts/pretrained_weights.sh          # edit peft_methods/models at the top
+
+# 1. Single-task fine-tunes + their evals
+#    -> saves_bts_preliminary/{method}/{model}/{train,eval}_{task}_{seed}_{ts}/
+bash scripts/slurm/preliminary_source.sh    # sources: mnli qnli qqp sst2 record
+bash scripts/slurm/preliminary_target.sh    # targets: mrpc boolq rte cola
+bash scripts/slurm/zero_shot.sh             # zero-shot refs on all 9 tasks
+
+# 2. Correct per-eval metrics + gathered reference table
+#    -> compute_metrics.jsonl in each eval dir; results.csv at repo root
+python scripts/compute_metrics.py           # per-dir metrics (edit lists at top)
+python scripts/compute_metrics.py --gather_results   # -> results.csv
+
+# 3. Source coefficient sweeps (one array index per combo; edit MODELS/METHODS
+#    constants at the top of src/eval/eval.py first)
+#    -> saves_bts_merged/{method}/{model}/{tasks}_{seed}_best/…_acc_coef.csv
+sbatch --array=0-25 scripts/slurm/eval_array.sh
+
+# 4. Target transfer sweeps (same indexing; constants in src/eval/eval_target.py)
+#    -> saves_bts_merged/{method}/{model}/{tasks}_{seed}_target/…_target_acc_coef.csv
+sbatch --array=0-25 scripts/slurm/eval_target_array.sh
+
+# 5. Analysis / figures / tables — see the block below
+```
+
+Steps 0–2 must complete before 3–4 (the sweeps read the fine-tuned checkpoints and
+pretrained snapshots); step 2's zero-shot/fine-tuned references are needed for every
+NAI number (steps 5's `compute_nai_sar.py` and `summarize_target.py`). Re-running
+step 1 creates a *new* timestamped `train_*` dir per task and the task-vector builder
+globs the first match — keep exactly one train dir per (method, task).
+
 ## Artifacts & how to regenerate
 
 All plotting/analysis runs with the `pf` conda env python (matplotlib is not in `base`):
@@ -213,9 +361,21 @@ PY=/mnt/data/home/robeke797/miniconda3/envs/pf/bin/python
 PYTHONPATH=src $PY scripts/visualize_amplification.py --tasks mnli qnli qqp sst2 record --methods base freeze
 PYTHONPATH=src $PY scripts/visualize_merged.py        # -> figures/merged/merged_coef_sweeps_{base,freeze,lora}.{png,pdf}
 PYTHONPATH=src $PY scripts/summarize_merged.py        # -> figures/merged/merge_summary.csv + console aggregates
+PYTHONPATH=src $PY scripts/compute_nai_sar.py --device cuda    # -> figures/nai_sar.csv (NAI + SAR/SAR_iso per task)
+PYTHONPATH=src $PY scripts/visualize_nai_sar.py               # -> figures/nai_sar/nai_vs_sar.{png,pdf}
+PYTHONPATH=src $PY scripts/visualize_nai_sar_compare.py       # -> figures/nai_sar/nai_vs_sar_compare_{method}.{png,pdf}
+PYTHONPATH=src $PY scripts/compare_best_coef.py --models llama-3.2-1b-instruct llama-3.2-3b-instruct \
+    --labels 1B 3B --plot                                     # -> figures/merged/best_coef_compare.{tex,png,pdf}
+$PY scripts/summarize_target.py --model llama-3.2-1b-instruct # -> figures/target/target_summary.{csv,tex} + ranking
 ```
 
 - `figures/amplification/` — amplification bars, amplification-vs-N, cosine heatmaps.
 - `figures/merged/merged_coef_sweeps_{method}.{png,pdf}` — per-method coef sweeps, one
   subplot per combo, dotted = single-task ceiling.
-- `figures/merged/merge_summary.csv` — per-(method,combo) best-coef stats used above.
+- `figures/merged/merge_summary.csv` — per-(method,combo) best-coef stats used above
+  (per-model snapshots in `merge_summary_llama-3.2-{1b,3b}.csv`).
+- `figures/merged/best_coef_compare.{tex,png,pdf}` — 1B-vs-3B best-coef table +
+  grouped barplot (best coef and accuracy per combo, bars = model × method).
+- `figures/nai_sar{,_iso}/`, `figures/nai_sar.csv` — NAI-vs-SAR scatters (§9).
+- `figures/target/target_summary.{csv,tex}` — per-target source-mixture rankings (§10).
+- `results.csv` — gathered zero-shot / single-task-FT exact-match references.

@@ -1,0 +1,30 @@
+\begin{table}[t]
+  \centering
+  \caption{Top-3 source-task combinations per target task for llama-3.2-1b-instruct (seed 42), ranked by accuracy at the merge coefficient that is best for the target. NAI is the normalized accuracy improvement over zero-shot relative to the target's single-task fine-tune.}
+  \label{tab:target-transfer}
+  \begin{tabular}{llrrr}
+    \toprule
+    Target & Combination & coef & acc & NAI \\
+    \midrule
+    boolq & sst2+record & 0.40 & 0.556 & 0.405 \\
+     & qnli+sst2+record & 0.25 & 0.513 & 0.302 \\
+     & qnli+record & 0.25 & 0.502 & 0.276 \\
+    & \multicolumn{4}{l}{\textit{zero-shot 0.387; single-task fine-tune 0.803}} \\
+    \addlinespace
+    cola & qnli+qqp+sst2 & 0.30 & 0.691 & 0.193 \\
+     & qnli+sst2 & 0.50 & 0.691 & 0.193 \\
+     & qqp+sst2 & 0.35 & 0.691 & 0.193 \\
+    & \multicolumn{4}{l}{\textit{zero-shot 0.664; single-task fine-tune 0.803}} \\
+    \addlinespace
+    mrpc & mnli+qnli & 0.60 & 0.762 & 0.934 \\
+     & mnli+record & 0.75 & 0.723 & 0.885 \\
+     & mnli+qnli+record & 0.55 & 0.718 & 0.879 \\
+    & \multicolumn{4}{l}{\textit{zero-shot 0.005; single-task fine-tune 0.816}} \\
+    \addlinespace
+    rte & mnli+qqp+sst2 & 0.60 & 0.755 & 1.000 \\
+     & mnli+qnli & 0.45 & 0.751 & 0.993 \\
+     & mnli+qqp & 0.80 & 0.740 & 0.971 \\
+    & \multicolumn{4}{l}{\textit{zero-shot 0.256; single-task fine-tune 0.755}} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
