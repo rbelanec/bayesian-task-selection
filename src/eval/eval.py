@@ -51,7 +51,7 @@ import time
 import torch
 
 TASKS = ["mnli", "qnli", "qqp", "sst2", "record"]
-MODELS = ["llama-3.2-1b-instruct"]
+MODELS = ["llama-3.2-3b-instruct"]
 METHODS = ["base"]
 SEEDS = [42]
 N_EVAL_POINTS = 41
@@ -59,6 +59,11 @@ EARLY_STOPPING = False
 EARLY_STOPPING_PATIENCE = 3
 COEF_MAX = 2.0
 DEVICE = "cuda"
+
+MODEL_MAPPING = {
+        "llama-3.2-1b-instruct": "meta-llama/Llama-3.2-1B-Instruct",
+        "llama-3.2-3b-instruct": "meta-llama/Llama-3.2-3B-Instruct"
+}
 
 
 logger = get_logger(__name__)
@@ -153,9 +158,6 @@ def run_eval(
     generating_args: "GeneratingArguments",
     callbacks: Optional[list["TrainerCallback"]] = None,
 ):
-    tokenizer_module = load_tokenizer(model_args)
-    tokenizer = tokenizer_module["tokenizer"]
-
     task_combinations = get_task_combinations(TASKS)
     scaling_coef_range = np.linspace(0.0, COEF_MAX, N_EVAL_POINTS)[1:]
     print(scaling_coef_range)
@@ -166,9 +168,13 @@ def run_eval(
     selected_combination = list(task_combinations[task_idx])
     print(f"Running task combination index {task_idx}: {selected_combination}")
 
-    compute_dtype = getattr(model_args, "compute_dtype", None) or torch.bfloat16
-
     for model in MODELS:
+        model_args.model_name_or_path = MODEL_MAPPING[model]
+
+        tokenizer_module = load_tokenizer(model_args)
+        tokenizer = tokenizer_module["tokenizer"]
+        compute_dtype = getattr(model_args, "compute_dtype", None) or torch.bfloat16
+
         for methods in METHODS:
             for seed in SEEDS:
                 for tasks in [selected_combination]:

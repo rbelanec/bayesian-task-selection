@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # peft_methods=(lora base)  # base/lora snapshots already generated (or symlink them)
-peft_methods=(freeze)
-models=(llama-3.2-1b-instruct)
+peft_methods=(base lora freeze)
+models=(llama-3.2-3b-instruct)
 seeds=(42)
 
 saves_output_dir="saves_pretrained_weights"
