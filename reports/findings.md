@@ -26,6 +26,17 @@ artifacts listed at the end.*
    mrpc: 0.93 from `mnli+qnli`) or barely help (cola: 0.19) — and each target has a
    *different* best mixture, which is exactly the ground truth a task-selection method
    must predict.
+6. **SAR alone does not select the right mixture; BO machinery works (§11).** The
+   target's subspace alignment (SAR) against a mixture is nearly uncorrelated with its
+   transfer accuracy (ρ ≈ −0.15…+0.32 per target; top-5 overlap with the accuracy
+   ranking 0–1/5), and raw SAR grows with mixture size, so its argmax is always the
+   full 5-task set — a suboptimal transfer pick everywhere. The iso variant is the
+   only alignment score with signal (cola ρ +0.66, boolq +0.47). Meanwhile Bayesian
+   optimization itself is validated: over a live SAR objective it finds the exhaustive
+   optimum in 8–14 of 20 evals, and in retrospective accuracy-objective simulations
+   plain **binary subset features beat every SAR feature set** (100% win rate, ~5.6
+   evals to within 1% of the true best; raw SAR as a GP feature is *worse than
+   random*).
 
 ---
 
@@ -309,7 +320,69 @@ mixtures, not a zero-target-data protocol.
   method's predicted ordering.
 
 *Artifacts:* `figures/target/target_summary.{csv,tex}` — full per-target rankings
-(CSV: 26 combos × 4 targets per method) and the paper-ready booktabs table.
+(CSV: 26 combos × 4 targets per method, incl. NAI and the target-SAR columns of §11)
+and the paper-ready booktabs ranking table; `figures/target/target_matrix.{csv,tex}` —
+the full 26×4 accuracy matrix (best combo per target in bold);
+`figures/target/target_sar_scatter.{png,pdf}` — per-target accuracy-vs-SAR scatters.
+
+---
+
+## 11. SAR as a selection signal + Bayesian-optimization proof of concept
+
+**Question.** Can the target task's *subspace alignment* with a source mixture —
+computable from single-task checkpoints alone, no merged-model evaluation — stand in
+for transfer accuracy as the BTS objective? And does BO find good subsets
+sample-efficiently?
+
+**Target SAR.** `utils.sar` now takes *probe vectors*: the subspace is built from the
+source subset's summed task vector, and the **target's own task vector** (from its
+single-task FT) is projected onto it. `scripts/compute_target_sar.py` computes this
+for all 26 mixtures × 4 targets (raw + iso) → `figures/target/target_sar.csv`, which
+`summarize_target.py` joins into the ranking. Caveat: for lora this operates on the
+raw `lora_A/B` factors, not the effective `B@A` delta.
+
+**SAR does not predict transfer** (`figures/analysis/`, `scripts/analysis_correlations.py`):
+
+- Per-target Spearman ρ(SAR, acc): mrpc +0.07, boolq −0.15, cola −0.10, rte +0.32.
+  Top-5 overlap with the accuracy ranking: 0–1 of 5. The accuracy-best mixture is
+  *never* the SAR-argmax; for mrpc the winner sits at *below-median* SAR.
+- **iso-SAR is the only variant with signal**: cola ρ +0.66, boolq +0.47 (still ~0 for
+  mrpc). Its per-target scatters (`sar_iso_vs_accuracy_per_target`) show cola's three
+  tied winners are exactly the three highest-iso-SAR mixtures.
+- **Arity confound:** raw SAR increases with mixture size (a bigger sum spans a wider
+  subspace), so argmax-SAR always selects the full 5-task set — which transfers
+  suboptimally everywhere (boolq: 0.368 vs the true best 0.556).
+
+**Online BO over a live SAR objective** (`scripts/bo_task_selection.py`, primitives in
+`src/bayesian_task_selection.py`): GP + EI over the {0,1}⁵ subset space, validated
+against exhaustive search (31 subsets), greedy forward selection (DTVG-style) and
+random search. BO finds the exhaustive SAR-optimum for **all 4 targets in 8–14 of 20
+evaluations** (raw SAR; the flatter iso landscape yields near-misses on boolq/cola) —
+the machinery works; the objective is the problem.
+
+**Which GP features find high-accuracy subsets?** (`scripts/analysis_bo_variants.py`,
+retrospective on the §10 grid, budget 13 evals of 26):
+
+| GP features | wins (found true best) | evals to within 1% |
+|---|---|---|
+| Binary subset vector | **100%** | **5.6** |
+| Binary + iso-SAR | 90% | 5.7 |
+| iso-SAR | 65% | 7.3 |
+| Random baseline | 57% | 7.3 |
+| raw SAR | 40% | 8.7 |
+
+**Implications for BTS.** (i) Raw SAR is not a usable objective — as a GP feature it
+is *worse than random search*. (ii) At n=26 the binary encoding dominates, but that
+cannot be the whole story at 15+ tasks (2¹⁵ subsets vs a small budget); whether
+iso-SAR (or an arity-normalized variant) regains value when the GP can no longer
+cover the space with indicator features alone is the key scaling question. (iii) Any
+alignment-based objective must handle the arity bias explicitly.
+
+*Artifacts:* `figures/target/target_sar.csv`; `figures/bo/`, `figures/bo_iso/`
+(convergence + landscape per target, `bo_summary.csv` with transfer-accuracy join);
+`figures/analysis/` (correlations.csv, per-target scatters, simulated-BO convergence,
+ranking comparison); `figures/bo_variants/` (feature-set convergence, summary bars,
+`bo_variants_summary.csv`).
 
 ---
 
@@ -343,12 +416,21 @@ sbatch --array=0-25 scripts/slurm/eval_array.sh
 #    -> saves_bts_merged/{method}/{model}/{tasks}_{seed}_target/…_target_acc_coef.csv
 sbatch --array=0-25 scripts/slurm/eval_target_array.sh
 
-# 5. Analysis / figures / tables — see the block below
+# 5. Target SAR (needed before summarize_target's sar columns and the §11 analyses)
+#    -> figures/target/target_sar.csv
+PYTHONPATH=src python scripts/compute_target_sar.py
+
+# 6. §11 selection analyses — CPU-only, run on the cpu_short partition:
+mkdir -p logs_analysis
+sbatch scripts/slurm/analysis.sh       # analysis_correlations + analysis_bo_variants
+sbatch scripts/slurm/bo_selection.sh   # online BO (raw -> figures/bo, iso -> figures/bo_iso)
+
+# 7. Remaining analysis / figures / tables — see the block below
 ```
 
 Steps 0–2 must complete before 3–4 (the sweeps read the fine-tuned checkpoints and
 pretrained snapshots); step 2's zero-shot/fine-tuned references are needed for every
-NAI number (steps 5's `compute_nai_sar.py` and `summarize_target.py`). Re-running
+NAI number (`compute_nai_sar.py` and `summarize_target.py` in step 7). Re-running
 step 1 creates a *new* timestamped `train_*` dir per task and the task-vector builder
 globs the first match — keep exactly one train dir per (method, task).
 
@@ -366,8 +448,14 @@ PYTHONPATH=src $PY scripts/visualize_nai_sar.py               # -> figures/nai_s
 PYTHONPATH=src $PY scripts/visualize_nai_sar_compare.py       # -> figures/nai_sar/nai_vs_sar_compare_{method}.{png,pdf}
 PYTHONPATH=src $PY scripts/compare_best_coef.py --models llama-3.2-1b-instruct llama-3.2-3b-instruct \
     --labels 1B 3B --plot                                     # -> figures/merged/best_coef_compare.{tex,png,pdf}
-$PY scripts/summarize_target.py --model llama-3.2-1b-instruct # -> figures/target/target_summary.{csv,tex} + ranking
+$PY scripts/summarize_target.py --model llama-3.2-1b-instruct # -> figures/target/target_summary.{csv,tex},
+                                                              #    target_matrix.{csv,tex}, target_sar_scatter.{png,pdf}
 ```
+
+The §11 scripts (`analysis_correlations.py`, `analysis_bo_variants.py`,
+`bo_task_selection.py`) import from `src/bayesian_task_selection.py` — run them with
+`PYTHONPATH=src`, preferably via the SLURM launchers above (botorch/gpytorch are
+installed in the `pf` env).
 
 - `figures/amplification/` — amplification bars, amplification-vs-N, cosine heatmaps.
 - `figures/merged/merged_coef_sweeps_{method}.{png,pdf}` — per-method coef sweeps, one
@@ -377,5 +465,10 @@ $PY scripts/summarize_target.py --model llama-3.2-1b-instruct # -> figures/targe
 - `figures/merged/best_coef_compare.{tex,png,pdf}` — 1B-vs-3B best-coef table +
   grouped barplot (best coef and accuracy per combo, bars = model × method).
 - `figures/nai_sar{,_iso}/`, `figures/nai_sar.csv` — NAI-vs-SAR scatters (§9).
-- `figures/target/target_summary.{csv,tex}` — per-target source-mixture rankings (§10).
+- `figures/target/target_summary.{csv,tex}` — per-target source-mixture rankings
+  incl. NAI + target-SAR (§10/§11); `target_matrix.{csv,tex}` — full 26×4 accuracy
+  matrix; `target_sar.csv`; `target_sar_scatter.{png,pdf}`.
+- `figures/bo/`, `figures/bo_iso/` — online BO over the live SAR objective (§11).
+- `figures/analysis/` — SAR↔accuracy/NAI correlations + simulated BO (§11).
+- `figures/bo_variants/` — GP-feature comparison for accuracy-objective BO (§11).
 - `results.csv` — gathered zero-shot / single-task-FT exact-match references.
