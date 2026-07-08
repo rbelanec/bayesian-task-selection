@@ -1,30 +1,38 @@
 \begin{table}[t]
   \centering
-  \caption{Top-3 source-task combinations per target task for llama-3.2-1b-instruct (seed 42), ranked by accuracy at the merge coefficient that is best for the target. NAI is the normalized accuracy improvement over zero-shot relative to the target's single-task fine-tune.}
+  \caption{Top-5 source-task combinations per target task for llama-3.2-1b-instruct (seed 42), ranked by accuracy at the merge coefficient that is best for the target. NAI is the normalized accuracy improvement over zero-shot relative to the target's single-task fine-tune; SAR is the subspace alignment ratio of the target's task vector against the mixture's summed subspace.}
   \label{tab:target-transfer}
-  \begin{tabular}{llrrr}
+  \begin{tabular}{llrrrr}
     \toprule
-    Target & Combination & coef & acc & NAI \\
+    Target & Combination & coef & acc & NAI & SAR \\
     \midrule
-    boolq & sst2+record & 0.40 & 0.556 & 0.405 \\
-     & qnli+sst2+record & 0.25 & 0.513 & 0.302 \\
-     & qnli+record & 0.25 & 0.502 & 0.276 \\
-    & \multicolumn{4}{l}{\textit{zero-shot 0.387; single-task fine-tune 0.803}} \\
+    boolq & sst2+record & 0.40 & 0.556 & 0.405 & 0.428 \\
+     & qnli+sst2+record & 0.25 & 0.513 & 0.302 & 0.478 \\
+     & qnli+record & 0.25 & 0.502 & 0.276 & 0.451 \\
+     & mnli+sst2+record & 0.25 & 0.487 & 0.238 & 0.469 \\
+     & mnli+sst2 & 0.30 & 0.472 & 0.202 & 0.383 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.387; single-task fine-tune 0.803}} \\
     \addlinespace
-    cola & qnli+qqp+sst2 & 0.30 & 0.691 & 0.193 \\
-     & qnli+sst2 & 0.50 & 0.691 & 0.193 \\
-     & qqp+sst2 & 0.35 & 0.691 & 0.193 \\
-    & \multicolumn{4}{l}{\textit{zero-shot 0.664; single-task fine-tune 0.803}} \\
+    cola & qnli+qqp+sst2 & 0.30 & 0.691 & 0.193 & 0.494 \\
+     & qnli+sst2 & 0.50 & 0.691 & 0.193 & 0.453 \\
+     & qqp+sst2 & 0.35 & 0.691 & 0.193 & 0.444 \\
+     & mnli+qnli & 0.55 & 0.690 & 0.186 & 0.442 \\
+     & mnli+qnli+qqp+sst2 & 0.30 & 0.689 & 0.179 & 0.516 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.664; single-task fine-tune 0.803}} \\
     \addlinespace
-    mrpc & mnli+qnli & 0.60 & 0.762 & 0.934 \\
-     & mnli+record & 0.75 & 0.723 & 0.885 \\
-     & mnli+qnli+record & 0.55 & 0.718 & 0.879 \\
-    & \multicolumn{4}{l}{\textit{zero-shot 0.005; single-task fine-tune 0.816}} \\
+    mrpc & mnli+qnli & 0.60 & 0.762 & 0.934 & 0.455 \\
+     & mnli+record & 0.75 & 0.723 & 0.885 & 0.476 \\
+     & mnli+qnli+record & 0.55 & 0.718 & 0.879 & 0.506 \\
+     & mnli+qnli+qqp+sst2 & 0.45 & 0.708 & 0.867 & 0.526 \\
+     & mnli+qnli+sst2+record & 0.55 & 0.706 & 0.864 & 0.513 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.005; single-task fine-tune 0.816}} \\
     \addlinespace
-    rte & mnli+qqp+sst2 & 0.60 & 0.755 & 1.000 \\
-     & mnli+qnli & 0.45 & 0.751 & 0.993 \\
-     & mnli+qqp & 0.80 & 0.740 & 0.971 \\
-    & \multicolumn{4}{l}{\textit{zero-shot 0.256; single-task fine-tune 0.755}} \\
+    rte & mnli+qqp+sst2 & 0.60 & 0.755 & 1.000 & 0.528 \\
+     & mnli+qnli & 0.45 & 0.751 & 0.993 & 0.511 \\
+     & mnli+qqp & 0.80 & 0.740 & 0.971 & 0.505 \\
+     & mnli+qqp+record & 0.55 & 0.740 & 0.971 & 0.540 \\
+     & mnli+qnli+qqp+sst2 & 0.50 & 0.733 & 0.957 & 0.573 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.256; single-task fine-tune 0.755}} \\
     \bottomrule
   \end{tabular}
 \end{table}

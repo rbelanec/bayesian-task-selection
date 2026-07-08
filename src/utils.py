@@ -116,6 +116,8 @@ def sar(
     rank_threshold: float = 0.95,
     device: str = "cpu",
     iso: bool = False,
+    probe_vectors: list[TaskVector] | None = None,
+    probe_tasks: list[str] | None = None,
 ) -> dict[str, float]:
     """Subspace Alignment Ratio (Marczak et al., iso-merging fig_3a.py).
 
@@ -129,23 +131,30 @@ def sar(
     are already filtered to self_attn/mlp at creation, so we keep every 2D
     matrix instead. Set `iso=True` to align against the isotropic spectrum
     (all singular values equal to their mean) rather than the raw sum spectrum.
+
+    By default the projected vectors are `task_vectors` themselves (in-mixture
+    SAR). Pass `probe_vectors`/`probe_tasks` to instead project *other* task
+    vectors (e.g. held-out target tasks) onto the mixture subspace — the
+    subspace is still built from `task_vectors` only.
     """
     assert len(task_vectors) == len(tasks), "need one task name per task vector"
+    if probe_vectors is None:
+        probe_vectors, probe_tasks = task_vectors, tasks
+    assert len(probe_vectors) == len(probe_tasks), "need one name per probe vector"
 
     # SAR is only defined for 2D weight matrices (skip biases / norms / 1D).
     keys_2d = [k for k in task_vectors[0].vector if task_vectors[0].vector[k].dim() == 2]
     mode = "iso" if iso else "sum"
     logger.info(
-        "sar[%s]: %d matrices over %d tasks on %s", mode, len(keys_2d), len(tasks), device
+        "sar[%s]: %d matrices, subspace from %d tasks, %d probes on %s",
+        mode, len(keys_2d), len(tasks), len(probe_tasks), device,
     )
     t0 = time.perf_counter()
 
-    alignment_ratios: dict[str, list[float]] = {task: [] for task in tasks}
+    alignment_ratios: dict[str, list[float]] = {task: [] for task in probe_tasks}
     for i, key in enumerate(keys_2d, 1):
         tk = time.perf_counter()
-        _tvs = [tv.vector[key].to(device) for tv in task_vectors]
-
-        merge_by_sum = sum(_tvs)
+        merge_by_sum = sum(tv.vector[key].to(device) for tv in task_vectors)
         U, S, _ = torch.linalg.svd(merge_by_sum, full_matrices=False)
 
         if iso:
@@ -153,7 +162,8 @@ def sar(
         rel_rank = calc_rank(S.cpu(), norm_thresh=rank_threshold)
         U_k = U[:, :rel_rank]
 
-        for task, tv in zip(tasks, _tvs):
+        for task, ptv in zip(probe_tasks, probe_vectors):
+            tv = ptv.vector[key].to(device)
             _, S_tv, _ = torch.linalg.svd(tv, full_matrices=False)
             proj = torch.linalg.multi_dot((U_k, U_k.T, tv))
             _, S_proj, _ = torch.linalg.svd(proj, full_matrices=False)

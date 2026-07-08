@@ -1,0 +1,43 @@
+\begin{table}[t]
+  \centering
+  \caption{Per-target best merged accuracy of every source-task combination for llama-3.2-1b-instruct (seed 42); each cell is the accuracy at the merge coefficient that is best for that target, best combination per target in bold.}
+  \label{tab:target-transfer-full}
+  \begin{tabular}{lrrrr}
+    \toprule
+    Combination & mrpc & boolq & rte & cola \\
+    \midrule
+    mnli+qnli & \textbf{0.762} & 0.426 & 0.751 & 0.690 \\
+    mnli+qqp & 0.672 & 0.367 & 0.740 & 0.679 \\
+    mnli+record & 0.723 & 0.457 & 0.606 & 0.589 \\
+    mnli+sst2 & 0.706 & 0.472 & 0.693 & 0.686 \\
+    qnli+qqp & 0.694 & 0.375 & 0.542 & 0.687 \\
+    qnli+record & 0.703 & 0.502 & 0.650 & 0.619 \\
+    qnli+sst2 & 0.689 & 0.456 & 0.650 & \textbf{0.691} \\
+    qqp+record & 0.360 & 0.378 & 0.484 & 0.688 \\
+    qqp+sst2 & 0.608 & 0.379 & 0.477 & \textbf{0.691} \\
+    sst2+record & 0.679 & \textbf{0.556} & 0.635 & 0.684 \\
+    \addlinespace
+    mnli+qnli+qqp & 0.703 & 0.364 & 0.722 & 0.686 \\
+    mnli+qnli+record & 0.718 & 0.470 & 0.679 & 0.646 \\
+    mnli+qnli+sst2 & 0.694 & 0.440 & 0.715 & 0.687 \\
+    mnli+qqp+record & 0.652 & 0.371 & 0.740 & 0.664 \\
+    mnli+qqp+sst2 & 0.694 & 0.367 & \textbf{0.755} & 0.689 \\
+    mnli+sst2+record & 0.694 & 0.487 & 0.664 & 0.677 \\
+    qnli+qqp+record & 0.674 & 0.376 & 0.570 & 0.680 \\
+    qnli+qqp+sst2 & 0.694 & 0.378 & 0.621 & \textbf{0.691} \\
+    qnli+sst2+record & 0.679 & 0.513 & 0.650 & 0.689 \\
+    qqp+sst2+record & 0.627 & 0.370 & 0.487 & 0.689 \\
+    \addlinespace
+    mnli+qnli+qqp+record & 0.703 & 0.367 & 0.700 & 0.684 \\
+    mnli+qnli+qqp+sst2 & 0.708 & 0.375 & 0.733 & 0.689 \\
+    mnli+qnli+sst2+record & 0.706 & 0.465 & 0.671 & 0.683 \\
+    mnli+qqp+sst2+record & 0.674 & 0.372 & 0.704 & 0.686 \\
+    qnli+qqp+sst2+record & 0.699 & 0.386 & 0.614 & 0.686 \\
+    \addlinespace
+    mnli+qnli+qqp+sst2+record & 0.691 & 0.368 & 0.715 & 0.686 \\
+    \midrule
+    \textit{zero-shot} & 0.005 & 0.387 & 0.256 & 0.664 \\
+    \textit{single-task fine-tune} & 0.816 & 0.803 & 0.755 & 0.803 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
