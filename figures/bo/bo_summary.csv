@@ -1,5 +1,0 @@
-target,objective,exhaustive_best,exhaustive_subset,bo_best,bo_subset,bo_found_optimum,bo_evals_to_optimum,greedy_best,greedy_subset,greedy_evals,random_avg_best,bo_subset_acc,sar_opt_subset_acc,acc_best_subset,acc_best
-mrpc,SAR,0.543049693107605,mnli+qnli+qqp+sst2+record,0.543049693107605,mnli+qnli+qqp+sst2+record,True,8,0.543049693107605,mnli+qqp+record+qnli+sst2,15,0.539121755361557,0.6911764705882353,0.6911764705882353,mnli+qnli,0.7622549019607843
-boolq,SAR,0.502165675163269,mnli+qnli+qqp+sst2+record,0.502165675163269,mnli+qnli+qqp+sst2+record,True,10,0.502165675163269,mnli+record+qqp+qnli+sst2,15,0.5001693832874298,0.3678899082568807,0.3678899082568807,sst2+record,0.5559633027522936
-rte,SAR,0.5842757821083069,mnli+qnli+qqp+sst2+record,0.5842757821083069,mnli+qnli+qqp+sst2+record,True,14,0.5842757821083069,qnli+sst2+qqp+mnli+record,15,0.5800196027755737,0.7148014440433214,0.7148014440433214,mnli+qqp+sst2,0.7545126353790613
-cola,SAR,0.5307329893112183,mnli+qnli+qqp+sst2+record,0.5307329893112183,mnli+qnli+qqp+sst2+record,True,8,0.5307329893112183,mnli+qqp+record+sst2+qnli,15,0.526503496170044,0.6855225311601151,0.6855225311601151,qqp+sst2,0.6912751677852349
