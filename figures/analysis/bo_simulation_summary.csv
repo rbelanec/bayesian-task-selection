@@ -1,0 +1,5 @@
+target,true_best,true_best_combo,sar_pick,sar_pick_acc,greedy_pick,greedy_first_acc,bo_median_best,bo_mean_evals_to_near_opt,random_mean_best
+boolq,0.5559633027522936,sst2+record,mnli+qnli+qqp+sst2+record,0.3678899082568807,mnli+qnli+qqp+sst2+record,0.3678899082568807,0.49434250764526,12.7,0.5295535168195721
+cola,0.6912751677852349,qnli+qqp+sst2,mnli+qnli+qqp+sst2+record,0.6855225311601151,mnli+qnli+qqp+sst2+record,0.6855225311601151,0.6903163950143816,1.4,0.6911217641418989
+mrpc,0.7622549019607843,mnli+qnli,mnli+qnli+qqp+sst2+record,0.6911764705882353,mnli+qnli+qqp+sst2+record,0.6911764705882353,0.7132352941176471,9.8,0.7417892156862755
+rte,0.7545126353790613,mnli+qqp+sst2,mnli+qnli+qqp+sst2+record,0.7148014440433214,mnli+qnli+qqp+sst2+record,0.7148014440433214,0.740072202166065,10.5,0.7488808664259915
