@@ -252,7 +252,7 @@ def simulate_bo_on_grid(target_df, feature_cols, n_initial=3, n_iterations=10,
         if not available:
             break
         try:
-            ei = fit_ei(all_X[evaluated], all_Y[evaluated])
+            ei = fit_ei(all_X[evaluated], all_Y[evaluated]) # fits the expected improvement acquisition function
             with torch.no_grad():
                 ei_values = [ei(all_X[i].unsqueeze(0).unsqueeze(0)).item()
                              for i in available]

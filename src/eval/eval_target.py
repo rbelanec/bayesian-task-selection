@@ -71,7 +71,7 @@ import torch
 SOURCE_TASKS = ["mnli", "qnli", "qqp", "sst2", "record"]
 TARGET_TASKS = ["mrpc", "boolq", "rte", "cola"]
 MODELS = ["llama-3.2-1b-instruct"]
-METHODS = ["lora"]
+METHODS = ["base"]
 SEEDS = [42]
 N_EVAL_POINTS = 41
 COEF_MAX = 2.0
