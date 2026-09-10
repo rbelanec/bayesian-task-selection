@@ -1,0 +1,13 @@
+target,family,mixture,size,same_family_sources,same_family_share,pool_share,aligned
+mrpc,PARA,record+hellaswag,2,0,0.0,0.16666666666666666,False
+boolq,QA,qnli+record+paws+hellaswag+winogrande,5,1,0.2,0.16666666666666666,True
+rte,NLI,mnli+qnli+qqp+sst2+anli_r1+paws+squad_v2+winogrande,8,3,0.375,0.3333333333333333,True
+cola,SENT,record+imdb+hellaswag,3,1,0.3333333333333333,0.16666666666666666,True
+cb,NLI,mnli+sst2+snli,3,2,0.6666666666666666,0.3333333333333333,True
+scitail,NLI,mnli+qqp+anli_r1+hellaswag,4,2,0.5,0.3333333333333333,True
+stsb,PARA,qnli+paws+winogrande,3,1,0.3333333333333333,0.16666666666666666,True
+cr,SENT,sst2+record+anli_r1,3,1,0.3333333333333333,0.16666666666666666,True
+rotten_tomatoes,SENT,sst2+record+imdb,3,2,0.6666666666666666,0.16666666666666666,True
+multirc,QA,mnli+qnli+anli_r1+paws,4,0,0.0,0.16666666666666666,False
+copa,CS,hellaswag+winogrande,2,2,1.0,0.16666666666666666,True
+piqa,CS,imdb+hellaswag+winogrande,3,2,0.6666666666666666,0.16666666666666666,True
