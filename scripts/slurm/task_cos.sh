@@ -12,8 +12,8 @@
 #   mkdir -p logs_analysis && sbatch scripts/slurm/task_cos.sh
 
 #SBATCH --partition=cpu_short
-#SBATCH --account=perun2601404
-#SBATCH --qos=perun2601404
+#SBATCH --account=ANON_ACCOUNT
+#SBATCH --qos=ANON_ACCOUNT
 #SBATCH --cpus-per-task=8
 #SBATCH --time=0-04:00:00
 #SBATCH --mem=16G

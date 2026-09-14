@@ -12,8 +12,8 @@
 # The global combination index is COMBO_OFFSET + SLURM_ARRAY_TASK_ID.
 
 #SBATCH --partition=gpu_short
-#SBATCH --account=perun2601404
-#SBATCH --qos=perun2601404
+#SBATCH --account=ANON_ACCOUNT
+#SBATCH --qos=ANON_ACCOUNT
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=2-00:00:00

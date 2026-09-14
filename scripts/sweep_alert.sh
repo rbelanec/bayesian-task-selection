@@ -93,7 +93,7 @@ body=$(
 # --- delivery -----------------------------------------------------------------
 # Not mail: the cluster relay accepts gmail.com and drops it with no bounce and
 # nothing in the queue, so a mailed alert looks sent and simply never arrives.
-# Outbound HTTPS does work from login01, so alerts go over ntfy instead. The
+# Outbound HTTPS does work from the login node, so alerts go over ntfy instead. The
 # topic name is the only thing protecting it, which is why it lives in a 0600
 # file outside the repo rather than being written down here.
 delivered=0
@@ -123,7 +123,7 @@ else
     exit 1
 fi
 
-# crontab line (crontab -e on login01 -- cron is per-node, and the wrapper runs
-# on login01, so this has to live on the same node):
+# crontab line (crontab -e on the login node -- cron is per-node, and the wrapper runs
+# on the login node, so this has to live on the same node):
 #   PATH=/usr/bin:/bin:/usr/sbin:/sbin
-#   */30 * * * * /mnt/project/perun250162/bayesian-task-selection/scripts/sweep_alert.sh >> /mnt/project/perun250162/bayesian-task-selection/logs_bts_merged/sweep_alert.log 2>&1
+#   */30 * * * * /path/to/bayesian-task-selection/scripts/sweep_alert.sh >> /path/to/bayesian-task-selection/logs_bts_merged/sweep_alert.log 2>&1

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2025 the PEFT-Factory team.
+# Copyright 2025 the Anonymous Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ do
                 OUTPUT_DIR="saves/${pm}/${m}/train_${d}_${s}_${TIMESTAMP}"
                 DATASET="${d}"
                 SEED="${s}"
-                WANDB_PROJECT="peft-factory-${pm}"
+                WANDB_PROJECT="anonymized-${pm}"
                 WANDB_NAME="${pm}_${m}_train_${d}_${s}_${TIMESTAMP}"
 
 

@@ -19,8 +19,8 @@
 #   PYTHONPATH=src $PYTHON scripts/compute_target_sar.py --device cuda
 
 #SBATCH --partition=gpu_short
-#SBATCH --account=perun2601404
-#SBATCH --qos=perun2601404
+#SBATCH --account=ANON_ACCOUNT
+#SBATCH --qos=ANON_ACCOUNT
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=08:00:00
@@ -31,7 +31,7 @@
 
 set -e
 
-REPO=/mnt/project/perun250162/bayesian-task-selection
+REPO=/path/to/bayesian-task-selection
 SHARD_DIR="$REPO/figures/target/shards"
 OUT="$REPO/figures/target/target_sar.csv"
 N_SHARDS="${N_SHARDS:-48}"

@@ -39,7 +39,7 @@ Method label for this study is `base`. (`lora` = rank-8 on `k_proj,v_proj`, α=8
 and `freeze` = full FT with embeddings/tied `lm_head`/final norm frozen, both
 used in the earlier phase.)
 
-**Data.** All tasks come from the `kinit/peft-factory` HF dataset. Eval-set sizes
+**Data.** All tasks come from the `anonymous/anonymous-datasets` HF dataset. Eval-set sizes
 vary by three orders of magnitude, which matters for how much weight a per-task
 result can carry: `cb` 56, `copa` 100, `stsb` 1500, `mnli` 9832, `squad_v2`
 11873, `record` 15176.

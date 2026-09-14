@@ -1,4 +1,4 @@
-# Copyright 2025 the PEFT-Factory team.
+# Copyright 2025 the Anonymous Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ _RECORD_METRIC = None
 def _get_record_dataset_and_metric():
     global _RECORD_DATASET, _RECORD_METRIC
     if _RECORD_DATASET is None:
-        _RECORD_DATASET = load_dataset("kinit/peft-factory", "record", split="validation")
+        _RECORD_DATASET = load_dataset("anonymous/anonymous-datasets", "record", split="validation")
     if _RECORD_METRIC is None:
         _RECORD_METRIC = evaluate.load("super_glue", "record")
     return _RECORD_DATASET, _RECORD_METRIC
@@ -54,7 +54,7 @@ def _get_record_dataset_and_metric():
 def compute_record(preds: list[str]) -> dict[str, float]:
     """SuperGLUE ReCoRD metric for a flat list of normalized predictions.
 
-    `preds[i]` must align by enumerate index with `kinit/peft-factory record`
+    `preds[i]` must align by enumerate index with `anonymous/anonymous-datasets record`
     validation row i — exactly the contract used by `scripts/compute_metrics.py`.
     Returns `{"accuracy": exact_match, "f1": f1}`; `accuracy` is the headline
     `predict_accuracy()` picks up in the coef sweep.
@@ -78,7 +78,7 @@ class ComputeRecord:
     """SuperGLUE ReCoRD metric, plugged into the trainer's compute_metrics slot.
 
     The default `ComputeClassification` does per-row exact-match accuracy, which
-    is wrong for ReCoRD: the `kinit/peft-factory` record validation set
+    is wrong for ReCoRD: the `anonymous/anonymous-datasets` record validation set
     duplicates each (passage, query) once per gold answer, so a prediction
     matching *any* of those gold answers still counts as wrong on the rows
     whose specific gold answer it didn't match. The SuperGLUE record metric
@@ -136,7 +136,7 @@ _SQUAD_METRIC = None
 def _get_squad_dataset_and_metric():
     global _SQUAD_DATASET, _SQUAD_METRIC
     if _SQUAD_DATASET is None:
-        _SQUAD_DATASET = load_dataset("kinit/peft-factory", "squad_v2", split="validation")
+        _SQUAD_DATASET = load_dataset("anonymous/anonymous-datasets", "squad_v2", split="validation")
     if _SQUAD_METRIC is None:
         _SQUAD_METRIC = evaluate.load("squad_v2")
     return _SQUAD_DATASET, _SQUAD_METRIC
@@ -145,7 +145,7 @@ def _get_squad_dataset_and_metric():
 def compute_squad_v2(preds: list[str]) -> dict[str, float]:
     """SQuAD v2 EM/F1 for a flat list of normalized predictions.
 
-    `preds[i]` must align by enumerate index with `kinit/peft-factory squad_v2`
+    `preds[i]` must align by enumerate index with `anonymous/anonymous-datasets squad_v2`
     validation row i — the same contract as `compute_record` and as
     `squad_v2_metric()` in scripts/compute_metrics.py, whose prediction handling
     (first line only, "unanswerable" mapped to the no-answer slot) is mirrored

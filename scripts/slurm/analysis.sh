@@ -14,8 +14,8 @@
 # target, `analysis_bo_variants.py --from-curves` redraws all figures in seconds.
 
 #SBATCH --partition=cpu_short
-#SBATCH --account=perun2601404
-#SBATCH --qos=perun2601404
+#SBATCH --account=ANON_ACCOUNT
+#SBATCH --qos=ANON_ACCOUNT
 #SBATCH --cpus-per-task=8
 #SBATCH --time=1-00:00:00
 #SBATCH --mem=32G

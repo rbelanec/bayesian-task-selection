@@ -67,7 +67,7 @@ and the pretrained weights θ_pre. θ_pre is captured explicitly as an
 "EPOCHS=0 fine-tune" so the origin is exactly the checkpoint the runs started
 from, not a re-downloaded copy.
 
-**Data.** All tasks come from the `kinit/peft-factory` HuggingFace dataset.
+**Data.** All tasks come from the `anonymous/anonymous-datasets` HuggingFace dataset.
 
 **Source tasks (12)** — `mnli, qnli, qqp, sst2, record, snli, anli_r1, paws,
 imdb, squad_v2, hellaswag, winogrande`

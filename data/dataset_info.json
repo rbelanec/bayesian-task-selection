@@ -194,7 +194,7 @@
     }
   },
   "record": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "record",
     "split": "train",
     "instruction": "Based on the following query, entities, and passage, replace the @placeholder in the query. Respond only with the correct replacement.",
@@ -204,7 +204,7 @@
     }
   },
   "record_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "record",
     "split": "validation",
     "instruction": "Based on the following query, entities, and passage, replace the @placeholder in the query. Respond only with the correct replacement.",
@@ -214,7 +214,7 @@
     }
   },
   "multirc": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "multirc",
     "split": "train",
     "instruction": "Based on the following paragraph, question, and answer, determine whether the answer answers the question. Respond only with the corresponding true or false.",
@@ -224,7 +224,7 @@
     }
   },
   "multirc_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "multirc",
     "split": "validation",
     "instruction": "Based on the following paragraph, question, and answer, determine whether the answer answers the question. Respond only with the corresponding true or false.",
@@ -256,7 +256,7 @@
     }
   },
   "wic": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "wic",
     "split": "train",
     "instruction": "Based on the context from the following sentence pair, classify the word into true or false classes, based on its meaning in both of the sentences. Respond only with the corresponding true or false.",
@@ -266,7 +266,7 @@
     }
   },
   "wic_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "wic",
     "split": "validation",
     "instruction": "Based on the context from the following sentence pair, classify the word into true or false classes, based on its meaning in both of the sentences. Respond only with the corresponding true or false.",
@@ -276,7 +276,7 @@
     }
   },
   "wsc": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "wsc",
     "split": "train",
     "instruction": "Based on the following sentence, determine whether the pronoun marked with * * is referencing the noun marked with # #. Respond only with the corresponding true or false.",
@@ -286,7 +286,7 @@
     }
   },
   "wsc_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "wsc",
     "split": "validation",
     "instruction": "Based on the following sentence, determine whether the pronoun marked with * * is referencing the noun marked with # #. Respond only with the corresponding true or false.",
@@ -318,7 +318,7 @@
     }
   },
   "copa": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "copa",
     "split": "train",
     "instruction": "Based on the following premise and choice pair, select the plausible alternative from choice pair. Respond only with the corresponding choice1 or choice2.",
@@ -328,7 +328,7 @@
     }
   },
   "copa_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "copa",
     "split": "validation",
     "instruction": "Based on the following premise and choice pair, select the plausible alternative from the choice pair. Respond only with the corresponding choice1 or choice2.",
@@ -338,7 +338,7 @@
     }
   },
   "mmlu": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "mmlu",
     "split": "auxiliary_train",
     "instruction": "Based on the question and provided choices, select the right answer. Respond only with the corresponding choices A, B, C, and D.",
@@ -348,7 +348,7 @@
     }
   },
   "mmlu_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "mmlu",
     "split": "validation",
     "instruction": "Based on the question and provided choices, select the right answer. Respond only with the corresponding choices A, B, C, and D.",
@@ -358,7 +358,7 @@
     }
   },
   "piqa": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "piqa",
     "split": "train",
     "instruction": "Based on the question and provided solutions, select the right solution. Respond only with the corresponding solution1 or solution2.",
@@ -368,7 +368,7 @@
     }
   },
   "piqa_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "piqa",
     "split": "validation",
     "instruction": "Based on the question and provided solutions, select the right solution. Respond only with the corresponding solution1 or solution2.",
@@ -378,7 +378,7 @@
     }
   },
   "siqa": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "siqa",
     "split": "train",
     "instruction": "Based on the context, question and provided choices, select the right answer. Respond only with the corresponding choices A, B, and C.",
@@ -388,7 +388,7 @@
     }
   },
   "siqa_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "siqa",
     "split": "validation",
     "instruction": "Based on the context, question and provided choices, select the right answer. Respond only with the corresponding choices A, B and C.",
@@ -398,7 +398,7 @@
     }
   },
   "hellaswag": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "hellaswag",
     "split": "train",
     "instruction": "Based on the sentence and provided endings, select the correct ending that finishes the sentence correctly. Respond only with the corresponding ending1, ending2, ending3, and ending4.",
@@ -408,7 +408,7 @@
     }
   },
   "hellaswag_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "hellaswag",
     "split": "validation",
     "instruction": "Based on the sentence and provided endings, select the correct ending that finishes the sentence correctly. Respond only with the corresponding ending1, ending2, ending3, and ending4.",
@@ -418,7 +418,7 @@
     }
   },
   "winogrande": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "winogrande",
     "split": "train",
     "instruction": "",
@@ -428,7 +428,7 @@
     }
   },
   "winogrande_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "winogrande",
     "split": "validation",
     "instruction": "Based on the sentence and provided options, select the best option that replaces the '_' character in the sentence. Respond only with the corresponding option1 or option2.",
@@ -438,7 +438,7 @@
     }
   },
   "openbookqa": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "openbookqa",
     "split": "train",
     "instruction": "Based on the question and provided choices, select the right answer. Respond only with the corresponding choices A, B, C, and D.",
@@ -448,7 +448,7 @@
     }
   },
     "openbookqa_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "openbookqa",
     "split": "validation",
     "instruction": "Based on the question and provided choices, select the right answer. Respond only with the corresponding choices A, B, C, and D.",
@@ -458,7 +458,7 @@
     }
   },
   "math_qa": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "math_qa",
     "split": "train",
     "instruction": "Based on the problem and provided options, select the right answer. Respond only with the corresponding choices a, b, c, d, and e.",
@@ -468,7 +468,7 @@
     }
   },
   "math_qa_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "math_qa",
     "split": "validation",
     "instruction": "Based on the problem and provided options, select the right answer. Respond only with the corresponding choices a, b, c, d, and e.",
@@ -498,7 +498,7 @@
     }
   },
   "svamp": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "svamp",
     "split": "train",
     "instruction": "Answer following math question. The answer is always numerical. Respond only with a single equation with parentheses (e.g., (1 + 1) = 2).",
@@ -508,7 +508,7 @@
     }
   },
   "svamp_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "svamp",
     "split": "test",
     "instruction": "Answer following math question. The answer is always numerical. Respond only with a single equation with parentheses (e.g., (1 + 1) = 2).",
@@ -518,7 +518,7 @@
     }
   },
   "conala": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "conala",
     "split": "train",
     "instruction": "Based on the following instruction, generate a valid Python code that answers it.",
@@ -556,7 +556,7 @@
     }
   },
   "apps": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "apps",
     "split": "train",
     "instruction": "Based on the following instruction, generate a valid Python code that answers it.",
@@ -566,7 +566,7 @@
     }
   },
   "apps_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "apps",
     "split": "test",
     "instruction": "Based on the following instruction, generate a valid Python code that answers it.",
@@ -696,7 +696,7 @@
     }
   },
   "imdb": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "imdb",
     "split": "train",
     "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
@@ -706,7 +706,7 @@
     }
   },
   "imdb_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "imdb",
     "split": "test",
     "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
@@ -716,7 +716,7 @@
     }
   },
   "rotten_tomatoes": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "rotten_tomatoes",
     "split": "train",
     "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
@@ -726,7 +726,7 @@
     }
   },
   "rotten_tomatoes_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "rotten_tomatoes",
     "split": "test",
     "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
@@ -736,7 +736,7 @@
     }
   },
   "paws": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "paws",
     "split": "train",
     "instruction": "Based on the equivalence of following sentence pair, classify it with true or false. Respond only with the corresponding true or false.",
@@ -746,7 +746,7 @@
     }
   },
   "paws_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "paws",
     "split": "test",
     "instruction": "Based on the equivalence of following sentence pair, classify it with true or false. Respond only with the corresponding true or false.",
@@ -756,7 +756,7 @@
     }
   },
   "squad_v2": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "squad_v2",
     "split": "train",
     "instruction": "Based on the context, answer the following question. If the answer is not present in the context, respond with 'unanswerable'.",
@@ -766,7 +766,7 @@
     }
   },
   "squad_v2_eval": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "squad_v2",
     "split": "validation",
     "instruction": "Based on the context, answer the following question. If the answer is not present in the context, respond with 'unanswerable'.",
@@ -846,7 +846,7 @@
     "num_samples": 100
   },
   "rotten_tomatoes_100": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "rotten_tomatoes",
     "split": "train",
     "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
@@ -880,7 +880,7 @@
     "num_samples": 100
   },
   "multirc_100": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "multirc",
     "split": "train",
     "instruction": "Based on the following paragraph, question, and answer, determine whether the answer answers the question. Respond only with the corresponding true or false.",
@@ -891,7 +891,7 @@
     "num_samples": 100
   },
   "copa_100": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "copa",
     "split": "train",
     "instruction": "Based on the following premise and choice pair, select the plausible alternative from choice pair. Respond only with the corresponding choice1 or choice2.",
@@ -902,7 +902,7 @@
     "num_samples": 100
   },
   "piqa_100": {
-    "hf_hub_url": "kinit/peft-factory",
+    "hf_hub_url": "anonymous/anonymous-datasets",
     "subset": "piqa",
     "split": "train",
     "instruction": "Based on the question and provided solutions, select the right solution. Respond only with the corresponding solution1 or solution2.",

@@ -10,6 +10,23 @@ Research findings live in [`reports/findings.md`](reports/findings.md). This fil
 is the operational map: what state the pipeline is in, what each script does, and
 how to run it.
 
+## Anonymized for review
+
+This branch is redacted for double-blind review. The following identifiers were
+replaced and must be restored before the code is run or released:
+
+| placeholder | what it stands for |
+| --- | --- |
+| `anonymous/anonymous-datasets` | the HuggingFace dataset repository holding all 24 task splits |
+| `ANON_ACCOUNT` | the SLURM account and QoS name in `scripts/slurm/*.sh` |
+| `/path/to/bayesian-task-selection` | the absolute repository path in cron and job scripts |
+| `Copyright 2025 the Anonymous Authors.` | the upstream framework's copyright header |
+
+Code that loads data will not run as-is, because
+`anonymous/anonymous-datasets` is not a real dataset path. Every number in the
+paper is reproducible from the committed artifacts under `figures/` without
+re-running the sweep, and the analysis scripts read those files directly.
+
 Model `llama-3.2-1b-instruct`, seed 42, method `base` (full fine-tuning).
 
 ## Status

@@ -1,4 +1,4 @@
-# Copyright 2025 the PEFT-Factory team.
+# Copyright 2025 the Anonymous Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ def spearmanr(preds, targets, labels):
 
 
 def record(preds):
-    dataset = load_dataset("kinit/peft-factory", "record", split="validation")
+    dataset = load_dataset("anonymous/anonymous-datasets", "record", split="validation")
     metric = evaluate.load("super_glue", "record")
 
     predictions = [
@@ -273,7 +273,7 @@ def squad_v2_metric(preds):
     generated_texts: list of raw model outputs, aligned with examples."""
 
     metric = evaluate.load("squad_v2")
-    dataset = load_dataset("kinit/peft-factory", "squad_v2", split="validation")
+    dataset = load_dataset("anonymous/anonymous-datasets", "squad_v2", split="validation")
 
 
     def clean(text):
