@@ -81,6 +81,13 @@ history came from a second copy.
 - **`scripts/summarize_target.py`** — reads every target sweep CSV, takes each
   combo's best coefficient *per target*, computes NAI, joins SAR. Writes
   `target_summary.csv` (the GP's input), plus the matrix and LaTeX tables.
+
+**Released benchmark artifact.** `figures/target/target_grid_full.csv` is the
+complete evaluation grid, 4,083 subsets x 40 scaling coefficients x 12 targets =
+163,320 rows, one row per (subset, coefficient) with a column per target. A
+selection method can be scored against it by lookup, with no GPU. Taking the
+per-target maximum over coefficients reproduces `target_matrix.csv` and both the
+accuracy and coefficient columns of `target_summary.csv` exactly.
 - **`scripts/compute_target_sar.py`** — GPU. Subspace Alignment Ratio of each
   target's task vector against each mixture's summed subspace. Supports
   `--start/--limit` (sharding) and `--resume`.
