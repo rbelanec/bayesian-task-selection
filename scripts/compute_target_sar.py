@@ -34,8 +34,12 @@ import os
 
 import utils
 
+from combo_names import parse_combo, target_tasks
+
 MERGED_ROOT = "saves_bts_merged"
-TARGET_TASKS = ["mrpc", "boolq", "rte", "cola"]
+# Read from src/eval/eval_target.py rather than restated here, so this cannot go
+# stale against the sweep the way the original four-target list did.
+TARGET_TASKS = target_tasks()
 
 
 def discover_combos(model: str, seed: int, methods: list[str] | None):
@@ -47,8 +51,8 @@ def discover_combos(model: str, seed: int, methods: list[str] | None):
             continue
         for csvf in sorted(glob.glob(
                 f"{method_dir}/*_{seed}_target/*_{seed}_target_acc_coef.csv")):
-            tasks = tuple(os.path.basename(csvf)
-                          .removesuffix(f"_{seed}_target_acc_coef.csv").split("_"))
+            tasks = tuple(parse_combo(os.path.basename(csvf)
+                                      .removesuffix(f"_{seed}_target_acc_coef.csv")))
             out.append((method, tasks))
     return out
 
@@ -63,6 +67,15 @@ def main():
     ap.add_argument("--device", default="cpu", help="device for SAR SVDs (e.g. cuda)")
     ap.add_argument("--rank-threshold", type=float, default=0.95)
     ap.add_argument("--out", default="figures/target/target_sar.csv")
+    ap.add_argument("--no-resume", dest="resume", action="store_false",
+                    help="recompute every combo instead of skipping the "
+                         "(method, combo) pairs already present in --out")
+    ap.add_argument("--start", type=int, default=0,
+                    help="index of the first combo to process (see --limit); "
+                         "the discovery order is deterministic, so "
+                         "--start/--limit carve disjoint shards for an array job")
+    ap.add_argument("--limit", type=int, default=None,
+                    help="process at most this many combos from --start")
     args = ap.parse_args()
 
     logging.basicConfig(
@@ -76,7 +89,32 @@ def main():
             f"(seed {args.seed})"
         )
 
-    rows = []
+    # Sliced before anything else so a shard's membership depends only on the
+    # discovery order, not on what any other shard has already written.
+    n_all = len(combos)
+    stop = n_all if args.limit is None else min(n_all, args.start + args.limit)
+    combos = combos[args.start:stop]
+    if not combos:
+        raise SystemExit(f"--start {args.start} is past the last combo ({n_all - 1})")
+    print(f"[slice] combos {args.start}..{stop - 1} of {n_all}")
+
+    fieldnames = ["method", "combo", "n_tasks", "target", "sar", "sar_iso"]
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+
+    # At 4083 combos this is a many-hour job, so results are streamed and an
+    # interrupted run resumes instead of discarding everything it computed.
+    done = set()
+    if args.resume and os.path.exists(args.out):
+        with open(args.out, newline="") as f:
+            done = {(r["method"], r["combo"]) for r in csv.DictReader(f)}
+        print(f"[resume] {args.out} already holds {len(done)} (method, combo) pairs")
+
+    out_f = open(args.out, "a" if done else "w", newline="")
+    writer = csv.DictWriter(out_f, fieldnames=fieldnames)
+    if not done:
+        writer.writeheader()
+
+    n_written = 0
     for method in sorted({m for m, _ in combos}):
         source_tasks = sorted({t for m, ts in combos if m == method for t in ts})
         try:
@@ -88,33 +126,28 @@ def main():
             print(f"[skip method] {method}: {e}")
             continue
 
-        for m, tasks in combos:
-            if m != method:
-                continue
+        todo = [(m, ts) for m, ts in combos
+                if m == method and (m, "+".join(ts)) not in done]
+        for n, (m, tasks) in enumerate(todo, 1):
             combo = "+".join(tasks)
             tvs = [source_tvs[t] for t in tasks]
-            sar = utils.sar(tvs, list(tasks), rank_threshold=args.rank_threshold,
-                            device=args.device,
-                            probe_vectors=target_tvs, probe_tasks=args.targets)
-            sar_iso = utils.sar(tvs, list(tasks), rank_threshold=args.rank_threshold,
-                                device=args.device, iso=True,
-                                probe_vectors=target_tvs, probe_tasks=args.targets)
-            for target in args.targets:
-                rows.append(dict(
-                    method=method, combo=combo, n_tasks=len(tasks), target=target,
-                    sar=sar.get(target), sar_iso=sar_iso.get(target),
-                ))
-            print(f"[ok] {method} {combo}")
+            # One pass: both modes share the summed-subspace SVD.
+            sar, sar_iso = utils.sar_both(
+                tvs, list(tasks), rank_threshold=args.rank_threshold,
+                device=args.device, probe_vectors=target_tvs,
+                probe_tasks=args.targets)
+            writer.writerows([
+                dict(method=method, combo=combo, n_tasks=len(tasks), target=target,
+                     sar=sar.get(target), sar_iso=sar_iso.get(target))
+                for target in args.targets])
+            out_f.flush()
+            n_written += len(args.targets)
+            print(f"[ok {n}/{len(todo)}] {method} {combo}", flush=True)
 
-    if not rows:
+    out_f.close()
+    if not n_written and not done:
         raise SystemExit("no rows computed (every combo was skipped)")
-
-    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
-    with open(args.out, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        w.writeheader()
-        w.writerows(rows)
-    print(f"\nwrote {args.out} ({len(rows)} rows)")
+    print(f"\nwrote {args.out} (+{n_written} rows this run)")
 
 
 if __name__ == "__main__":

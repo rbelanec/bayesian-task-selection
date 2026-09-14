@@ -1,0 +1,43 @@
+\begin{table}[t]
+  \centering
+  \caption{Best source-task mixture per target task for llama-3.2-1b-instruct (seed 42), out of every evaluated combination. acc is the target's accuracy at the merge coefficient best for that target; NAI normalizes it between the pretrained model and the target's own single-task fine-tune.}
+  \label{tab:target-best-per-target}
+  \begin{tabular}{llrrrr}
+    \toprule
+    Target & Best combination & $k$ & coef & acc & NAI \\
+    \midrule
+    boolq & qnli+record+paws+hellaswag+winogrande & 5 & 0.35 & 0.699 & 0.707 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.387; single-task fine-tune 0.828}} \\
+    \addlinespace
+    cb & mnli+sst2+snli (42 tied) & 3 & 0.80 & 0.893 & 1.250 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.000; single-task fine-tune 0.714}} \\
+    \addlinespace
+    cola & record+imdb+hellaswag & 3 & 0.30 & 0.674 & 0.057 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.664; single-task fine-tune 0.832}} \\
+    \addlinespace
+    copa & hellaswag+winogrande & 2 & 0.35 & 0.770 & 1.044 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.300; single-task fine-tune 0.750}} \\
+    \addlinespace
+    cr & sst2+record+anli\_r1 & 3 & 0.40 & 0.934 & 0.996 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.184; single-task fine-tune 0.936}} \\
+    \addlinespace
+    mrpc & record+hellaswag (2 tied) & 2 & 0.80 & 0.684 & 0.805 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.005; single-task fine-tune 0.848}} \\
+    \addlinespace
+    multirc & mnli+qnli+anli\_r1+paws & 4 & 0.20 & 0.757 & 0.766 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.440; single-task fine-tune 0.854}} \\
+    \addlinespace
+    piqa & imdb+hellaswag+winogrande & 3 & 0.35 & 0.721 & 0.820 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.368; single-task fine-tune 0.799}} \\
+    \addlinespace
+    rotten\_tomatoes & sst2+record+imdb & 3 & 0.55 & 0.929 & 1.011 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.231; single-task fine-tune 0.921}} \\
+    \addlinespace
+    rte & mnli+qnli+qqp+sst2+anli\_r1+paws+imdb+winogrande & 8 & 0.20 & 0.838 & 1.110 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.256; single-task fine-tune 0.780}} \\
+    \addlinespace
+    scitail & mnli+qqp+anli\_r1+hellaswag & 4 & 0.30 & 0.865 & 0.899 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.012; single-task fine-tune 0.960}} \\
+    \bottomrule
+  \end{tabular}
+\end{table}

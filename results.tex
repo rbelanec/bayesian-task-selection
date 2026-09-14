@@ -1,0 +1,56 @@
+\begin{table*}[t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccc}
+\toprule
+ & \multicolumn{7}{c}{Entailment / NLI} \\
+\cmidrule(lr){2-8}
+ & \cellcolor{blue!15}MNLI & \cellcolor{blue!15}QNLI & \cellcolor{blue!15}SNLI & \cellcolor{blue!15}ANLI-R1 & \cellcolor{orange!20}RTE & \cellcolor{orange!20}CB & \cellcolor{orange!20}SciTail \\
+\midrule
+LoRA & 0.886 & 0.927 & 0.900 & 0.516 & 0.755 & 0.661 & 0.942 \\
+Base & \textbf{0.898} & \textbf{0.929} & \textbf{0.905} & \textbf{0.591} & \textbf{0.780} & \textbf{0.714} & \textbf{0.960} \\
+Zero-shot & 0.001 & 0.005 & 0.000 & 0.000 & 0.256 & 0.000 & 0.012 \\
+\bottomrule
+\end{tabular}
+}
+\caption{Entailment / NLI. Values are exact match. Source tasks are shaded (\colorbox{blue!15}{blue}), target tasks (\colorbox{orange!20}{orange}).}
+\label{tab:results_nli}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccc}
+\toprule
+ & \multicolumn{4}{c}{Paraphrase / semantic eq.} & \multicolumn{5}{c}{Sentiment \& ling. acceptability} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-10}
+ & \cellcolor{blue!15}QQP & \cellcolor{blue!15}PAWS & \cellcolor{orange!20}MRPC & \cellcolor{orange!20}STS-B & \cellcolor{blue!15}SST-2 & \cellcolor{blue!15}IMDb & \cellcolor{orange!20}CR & \cellcolor{orange!20}Rotten Tomatoes & \cellcolor{orange!20}CoLA \\
+\midrule
+LoRA & 0.896 & 0.925 & 0.816 & 0.868 & \textbf{0.956} & 0.961 & 0.926 & 0.917 & 0.803 \\
+Base & \textbf{0.905} & \textbf{0.935} & \textbf{0.848} & \textbf{0.887} & 0.948 & \textbf{0.965} & \textbf{0.936} & \textbf{0.921} & \textbf{0.832} \\
+Zero-shot & 0.058 & 0.094 & 0.005 & 0.265 & 0.389 & 0.343 & 0.184 & 0.231 & 0.664 \\
+\bottomrule
+\end{tabular}
+}
+\caption{Paraphrase, sentiment and linguistic acceptability. Values are exact match, except for STS-B which reports Pearson correlation. Source tasks are shaded (\colorbox{blue!15}{blue}), target tasks (\colorbox{orange!20}{orange}).}
+\label{tab:results_para_sent}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccc}
+\toprule
+ & \multicolumn{4}{c}{Question answering} & \multicolumn{4}{c}{Commonsense reasoning} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+ & \cellcolor{blue!15}ReCoRD & \cellcolor{blue!15}SQuAD v2 & \cellcolor{orange!20}BoolQ & \cellcolor{orange!20}MultiRC & \cellcolor{blue!15}HellaSwag & \cellcolor{blue!15}WinoGrande & \cellcolor{orange!20}COPA & \cellcolor{orange!20}PIQA \\
+\midrule
+LoRA & 0.739 & 0.802 & 0.803 & 0.810 & 0.824 & 0.639 & 0.700 & 0.768 \\
+Base & \textbf{0.788} & \textbf{0.826} & \textbf{0.828} & \textbf{0.854} & \textbf{0.852} & \textbf{0.674} & \textbf{0.750} & \textbf{0.799} \\
+Zero-shot & 0.005 & 0.419 & 0.387 & 0.440 & 0.000 & 0.000 & 0.300 & 0.368 \\
+\bottomrule
+\end{tabular}
+}
+\caption{Question answering and commonsense reasoning. Values are exact match. Source tasks are shaded (\colorbox{blue!15}{blue}), target tasks (\colorbox{orange!20}{orange}).}
+\label{tab:results_qa_cs}
+\end{table*}

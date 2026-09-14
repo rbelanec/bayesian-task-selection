@@ -12,6 +12,9 @@ reports, against each task's single-task ceiling:
                   (upper bound; if this is still low the task is unrecoverable at any coef)
 
 Writes figures/merged/merge_summary.csv and prints aggregates by method and by arity.
+
+The per-target counterpart — for each task, which mixture is best — lives in
+scripts/summarize_target.py (--winners), on the target-transfer sweep.
 """
 
 from __future__ import annotations
@@ -24,6 +27,8 @@ import os
 from collections import defaultdict
 
 import numpy as np
+
+from reference_scores import reference_score
 
 MERGED_ROOT = "saves_bts_merged"
 PRELIM_ROOT = "saves_bts_preliminary"
@@ -44,14 +49,39 @@ def read_acc_coef(path):
 
 
 _single = {}
+_naive = set()
 
 
-def single_task_acc(method, model, seed, task):
+def single_task_acc(method, model, seed, task, allow_naive=False):
+    """The task's single-task fine-tune score — the ceiling the retention ratios
+    divide by. None when it cannot be established.
+
+    Reads compute_metrics.jsonl rather than predict_results.json: the latter's
+    `predict_accuracy` is the trainer's naive per-row exact match, which
+    understates every task that has a task-specific metric and so inflated
+    mean_ret/min_ret for them (record 0.5097 vs the correct 0.7878, squad_v2
+    0.7356 vs 0.8258). Same source and scale handling as summarize_target.py.
+
+    compute_metrics.jsonl only exists for the methods scripts/compute_metrics.py
+    iterates (`peft_methods`, currently lora/base/zero-shot) — `freeze` has none,
+    though it does have the generated_predictions.jsonl they are computed from.
+    `allow_naive` falls back to the trainer's number for those, which is why it
+    is opt-in: the retention columns exist to compare methods, and quietly
+    scoring one method with a weaker metric than the others is the kind of
+    comparison that looks fine and is not.
+    """
     key = (method, task)
     if key not in _single:
-        hits = sorted(glob.glob(
-            f"{PRELIM_ROOT}/{method}/{model}/eval_{task}_{seed}_*/predict_results.json"))
-        _single[key] = json.load(open(hits[0]))["predict_accuracy"] if hits else None
+        score = reference_score(
+            f"{PRELIM_ROOT}/{method}/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl",
+            task)
+        if score is None and allow_naive:
+            hits = sorted(glob.glob(
+                f"{PRELIM_ROOT}/{method}/{model}/eval_{task}_{seed}_*/predict_results.json"))
+            if hits:
+                score = json.load(open(hits[0]))["predict_accuracy"]
+                _naive.add(method)
+        _single[key] = score
     return _single[key]
 
 
@@ -59,11 +89,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="llama-3.2-1b-instruct")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--root", default=MERGED_ROOT,
+                    help=f"merged-sweep root to read (default {MERGED_ROOT}; point "
+                         "at saves_bts_merged_old for the earlier sweep)")
     ap.add_argument("--out", default="figures/merged/merge_summary.csv")
+    ap.add_argument("--allow-naive-reference", action="store_true",
+                    help="for methods with no compute_metrics.jsonl, fall back to "
+                         "the trainer's naive predict_accuracy instead of failing")
     args = ap.parse_args()
 
+    missing = set()
     rows = []
-    for method_dir in sorted(glob.glob(f"{MERGED_ROOT}/*/{args.model}")):
+    for method_dir in sorted(glob.glob(f"{args.root}/*/{args.model}")):
         method = method_dir.split(os.sep)[-2]
         for csvf in sorted(glob.glob(f"{method_dir}/*_{args.seed}_best/*_{args.seed}_acc_coef.csv")):
             coefs, tasks, accs = read_acc_coef(csvf)
@@ -71,7 +108,12 @@ def main():
             mean_curve = mat.mean(axis=0)
             bi = int(np.argmax(mean_curve))                     # best shared coef index
             at_best = mat[:, bi]
-            singles = np.array([single_task_acc(method, args.model, args.seed, t) for t in tasks])
+            found = [single_task_acc(method, args.model, args.seed, t,
+                                     args.allow_naive_reference) for t in tasks]
+            if any(s is None for s in found):
+                missing.update((method, t) for t, s in zip(tasks, found) if s is None)
+                continue
+            singles = np.array(found)
             ret = at_best / singles
             oracle_min_ret = float((mat.max(axis=1) / singles).min())  # each task own best coef
             rows.append(dict(
@@ -81,6 +123,21 @@ def main():
                 mean_ret=float(ret.mean()), min_ret=float(ret.min()),
                 oracle_min_ret=oracle_min_ret,
             ))
+
+    if missing:
+        methods = sorted({m for m, _ in missing})
+        print(f"warning: skipped every combination of method(s) {', '.join(methods)} — "
+              f"no compute_metrics.jsonl for {len(missing)} (method, task) pairs, e.g. "
+              f"{sorted(missing)[0]}. scripts/compute_metrics.py only iterates its "
+              f"`peft_methods` list; add the method there and re-run it over the "
+              f"existing generated_predictions.jsonl, or pass --allow-naive-reference "
+              f"to fall back to the trainer's weaker number.\n")
+
+    if not rows:
+        raise SystemExit(
+            f"no usable *_acc_coef.csv found under {args.root}/*/{args.model} "
+            f"(seed {args.seed}) — the source sweep has written none yet, or every "
+            f"one was skipped for a missing reference (see above)")
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", newline="") as f:

@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # orignal prelimianry experiments
-datasets=(mnli qnli qqp sst2 record)
+# datasets=(mnli qnli qqp sst2 record)
+datasets=(snli anli_r1 paws imdb squad_v2 hellaswag winogrande)
 peft_methods=(base lora)
-models=(llama-3.2-3b-instruct)
+models=(llama-3.2-1b-instruct)
 saves_output_dir="saves_bts_preliminary"
 logging_dir="logs_bts_preliminary"
 seeds=(42)

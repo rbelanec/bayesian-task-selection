@@ -1,0 +1,87 @@
+\begin{table}[t]
+  \centering
+  \caption{Top-5 source-task combinations per target task for llama-3.2-1b-instruct (seed 42), ranked by accuracy at the merge coefficient that is best for the target. NAI is the normalized accuracy improvement over zero-shot relative to the target's single-task fine-tune; SAR is the subspace alignment ratio of the target's task vector against the mixture's summed subspace.}
+  \label{tab:target-transfer}
+  \begin{tabular}{llrrrr}
+    \toprule
+    Target & Combination & coef & acc & NAI & SAR \\
+    \midrule
+    boolq & qnli+record+paws+hellaswag+winogrande & 0.35 & 0.699 & 0.707 & -- \\
+     & qnli+record+paws+winogrande & 0.35 & 0.697 & 0.703 & -- \\
+     & qnli+record+paws & 0.35 & 0.692 & 0.692 & -- \\
+     & qnli+record+paws+hellaswag & 0.35 & 0.692 & 0.692 & -- \\
+     & qnli+record+paws+imdb & 0.30 & 0.689 & 0.684 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.387; single-task fine-tune 0.828}} \\
+    \addlinespace
+    cb & mnli+qqp+snli+imdb+winogrande & 0.70 & 0.893 & 1.250 & -- \\
+     & mnli+qqp+sst2+snli+anli\_r1+imdb+winogrande & 0.60 & 0.893 & 1.250 & -- \\
+     & mnli+qqp+sst2+snli+anli\_r1+paws+imdb+winogrande & 0.60 & 0.893 & 1.250 & -- \\
+     & mnli+qqp+sst2+snli+anli\_r1+winogrande & 0.60 & 0.893 & 1.250 & -- \\
+     & mnli+record+snli+anli\_r1+imdb+hellaswag+winogrande & 0.70 & 0.893 & 1.250 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.000; single-task fine-tune 0.714}} \\
+    \addlinespace
+    cola & record+imdb+hellaswag & 0.30 & 0.674 & 0.057 & -- \\
+     & record+imdb & 0.30 & 0.672 & 0.046 & -- \\
+     & imdb+hellaswag & 0.30 & 0.669 & 0.029 & -- \\
+     & record+anli\_r1+imdb & 0.25 & 0.668 & 0.023 & -- \\
+     & mnli+hellaswag & 0.15 & 0.666 & 0.011 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.664; single-task fine-tune 0.832}} \\
+    \addlinespace
+    copa & hellaswag+winogrande & 0.35 & 0.770 & 1.044 & -- \\
+     & anli\_r1+hellaswag+winogrande & 0.35 & 0.760 & 1.022 & -- \\
+     & anli\_r1+imdb+hellaswag+winogrande & 0.30 & 0.760 & 1.022 & -- \\
+     & sst2+hellaswag+winogrande & 0.25 & 0.740 & 0.978 & -- \\
+     & imdb+hellaswag+winogrande & 0.30 & 0.730 & 0.956 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.300; single-task fine-tune 0.750}} \\
+    \addlinespace
+    cr & sst2+record+anli\_r1 & 0.40 & 0.934 & 0.996 & -- \\
+     & qnli+sst2+paws+imdb & 0.40 & 0.931 & 0.993 & -- \\
+     & sst2+anli\_r1+paws & 0.60 & 0.931 & 0.993 & -- \\
+     & sst2+record+squad\_v2 & 0.65 & 0.931 & 0.993 & -- \\
+     & qnli+sst2+anli\_r1 & 0.45 & 0.928 & 0.989 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.184; single-task fine-tune 0.936}} \\
+    \addlinespace
+    mrpc & record+hellaswag & 0.80 & 0.684 & 0.805 & -- \\
+     & record+hellaswag+winogrande & 0.85 & 0.684 & 0.805 & -- \\
+     & record+anli\_r1 & 0.60 & 0.679 & 0.799 & -- \\
+     & record+winogrande & 1.20 & 0.679 & 0.799 & -- \\
+     & record+imdb+hellaswag & 0.40 & 0.676 & 0.797 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.005; single-task fine-tune 0.848}} \\
+    \addlinespace
+    multirc & mnli+qnli+anli\_r1+paws & 0.20 & 0.757 & 0.766 & -- \\
+     & mnli+paws+hellaswag & 0.25 & 0.756 & 0.763 & -- \\
+     & mnli+paws & 0.30 & 0.754 & 0.757 & -- \\
+     & mnli+qnli+anli\_r1+paws+hellaswag & 0.20 & 0.754 & 0.757 & -- \\
+     & mnli+qnli+paws & 0.20 & 0.752 & 0.754 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.440; single-task fine-tune 0.854}} \\
+    \addlinespace
+    piqa & imdb+hellaswag+winogrande & 0.35 & 0.721 & 0.820 & -- \\
+     & anli\_r1+imdb+hellaswag & 0.35 & 0.721 & 0.819 & -- \\
+     & hellaswag+winogrande & 0.40 & 0.720 & 0.817 & -- \\
+     & anli\_r1+hellaswag & 0.45 & 0.717 & 0.810 & -- \\
+     & imdb+hellaswag & 0.45 & 0.715 & 0.807 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.368; single-task fine-tune 0.799}} \\
+    \addlinespace
+    rotten\_tomatoes & sst2+record+imdb & 0.55 & 0.929 & 1.011 & -- \\
+     & sst2+record+anli\_r1+imdb & 0.55 & 0.928 & 1.010 & -- \\
+     & sst2+imdb & 0.50 & 0.927 & 1.008 & -- \\
+     & sst2+record+imdb+hellaswag & 0.45 & 0.927 & 1.008 & -- \\
+     & sst2+imdb+hellaswag & 0.50 & 0.926 & 1.007 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.231; single-task fine-tune 0.921}} \\
+    \addlinespace
+    rte & mnli+qnli+qqp+sst2+anli\_r1+paws+imdb+winogrande & 0.20 & 0.838 & 1.110 & -- \\
+     & mnli+qnli+qqp+sst2+anli\_r1+hellaswag+winogrande & 0.25 & 0.834 & 1.103 & -- \\
+     & mnli+qqp+sst2+anli\_r1+paws+hellaswag & 0.20 & 0.834 & 1.103 & -- \\
+     & mnli+qnli+qqp+anli\_r1+paws+imdb+hellaswag+winogrande & 0.25 & 0.830 & 1.097 & -- \\
+     & mnli+qnli+qqp+sst2+anli\_r1+paws+imdb+hellaswag & 0.20 & 0.830 & 1.097 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.256; single-task fine-tune 0.780}} \\
+    \addlinespace
+    scitail & mnli+qqp+anli\_r1+hellaswag & 0.30 & 0.865 & 0.899 & -- \\
+     & mnli+qqp+record+anli\_r1+hellaswag & 0.30 & 0.863 & 0.897 & -- \\
+     & mnli+qqp+anli\_r1+paws+hellaswag & 0.30 & 0.863 & 0.897 & -- \\
+     & mnli+qqp+record+anli\_r1 & 0.35 & 0.863 & 0.897 & -- \\
+     & mnli+qqp+record+anli\_r1+paws+hellaswag & 0.30 & 0.863 & 0.897 & -- \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.012; single-task fine-tune 0.960}} \\
+    \bottomrule
+  \end{tabular}
+\end{table}

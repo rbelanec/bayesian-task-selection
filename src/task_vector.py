@@ -1,7 +1,6 @@
 # Adopted from https://github.com/danielm1405/iso-merging/blob/main/src/models/task_vectors.py
 
 import torch
-from safetensors.torch import load_file
 
 from transformers import AutoModelForCausalLM
 
@@ -55,13 +54,6 @@ class TaskVector:
                     finetuned_state_dict[key] - pretrained_state_dict[key]
                 )
 
-    def _safe_load(self, checkpoint_path):
-        try:
-            return load_file(checkpoint_path, device="cpu")
-        except Exception as e:
-            print(f"Error loading checkpoint from {checkpoint_path}: {e}")
-            raise
-
     def __add__(self, other):
         """Add two task vectors together."""
         with torch.no_grad():
@@ -73,53 +65,10 @@ class TaskVector:
                 new_vector[key] = self.vector[key] + other.vector[key]
         return self.__class__(vector=new_vector)
 
-    def __sub__(self, other):
-        """Subtract two task vectors."""
-        return self.__add__(-other)
-
     def __radd__(self, other):
         if other is None or isinstance(other, int):
             return self
         return self.__add__(other)
-
-    def __neg__(self):
-        """Negate a task vector."""
-        with torch.no_grad():
-            new_vector = {}
-            for key in self.vector:
-                new_vector[key] = -self.vector[key]
-        return self.__class__(vector=new_vector)
-
-    def __pow__(self, power):
-        """Power of a task vector."""
-        with torch.no_grad():
-            new_vector = {}
-            for key in self.vector:
-                new_vector[key] = self.vector[key] ** power
-        return self.__class__(vector=new_vector)
-
-    def __mul__(self, other):
-        """Multiply a task vector by a scalar."""
-        with torch.no_grad():
-            new_vector = {}
-            for key in self.vector:
-                new_vector[key] = other * self.vector[key]
-        return self.__class__(vector=new_vector)
-
-    def dot(self, other):
-        """Dot product of two task vectors."""
-        with torch.no_grad():
-            dot_product = 0.0
-            for key in self.vector:
-                if key not in other.vector:
-                    print(f"Warning, key {key} is not present in both task vectors.")
-                    continue
-                dot_product += torch.sum(self.vector[key] * other.vector[key])
-        return dot_product
-
-    def norm(self):
-        """Norm of a task vector."""
-        return torch.sqrt(self.dot(self))
 
     def _load_checkpoint(self, checkpoint_path):
         model = AutoModelForCausalLM.from_pretrained(

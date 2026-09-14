@@ -183,3 +183,12 @@ experiments
 logs*
 .activate_scratch
 
+
+# Paper sources live in their own repository and carry author identity
+botas-paper/
+
+# Local assistant activity digests: contain absolute home paths, the local
+# username, and notes from unrelated projects
+cc-digest.md
+cc-digest-archive.md
+cc-digest.py

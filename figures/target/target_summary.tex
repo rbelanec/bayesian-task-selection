@@ -6,33 +6,89 @@
     \toprule
     Target & Combination & coef & acc & NAI & SAR \\
     \midrule
-    boolq & sst2+record & 0.40 & 0.556 & 0.405 & 0.428 \\
-     & qnli+sst2+record & 0.25 & 0.513 & 0.302 & 0.478 \\
-     & qnli+record & 0.25 & 0.502 & 0.276 & 0.451 \\
-     & mnli+sst2+record & 0.25 & 0.487 & 0.238 & 0.469 \\
-     & mnli+sst2 & 0.30 & 0.472 & 0.202 & 0.383 \\
-    & \multicolumn{5}{l}{\textit{zero-shot 0.387; single-task fine-tune 0.803}} \\
+    boolq & qnli+record+paws+hellaswag+winogrande & 0.35 & 0.699 & 0.707 & 0.702 \\
+     & qnli+record+paws+winogrande & 0.35 & 0.697 & 0.703 & 0.701 \\
+     & qnli+record+paws & 0.35 & 0.692 & 0.692 & 0.698 \\
+     & qnli+record+paws+hellaswag & 0.35 & 0.692 & 0.692 & 0.701 \\
+     & qnli+record+paws+squad\_v2 & 0.25 & 0.692 & 0.692 & 0.708 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.387; single-task fine-tune 0.828}} \\
     \addlinespace
-    cola & qnli+qqp+sst2 & 0.30 & 0.691 & 0.193 & 0.494 \\
-     & qnli+sst2 & 0.50 & 0.691 & 0.193 & 0.453 \\
-     & qqp+sst2 & 0.35 & 0.691 & 0.193 & 0.444 \\
-     & mnli+qnli & 0.55 & 0.690 & 0.186 & 0.442 \\
-     & mnli+qnli+qqp+sst2 & 0.30 & 0.689 & 0.179 & 0.516 \\
-    & \multicolumn{5}{l}{\textit{zero-shot 0.664; single-task fine-tune 0.803}} \\
+    cb & mnli+qqp+record+snli+anli\_r1+paws+squad\_v2+winogrande & 0.55 & 0.893 & 1.250 & 0.681 \\
+     & mnli+qqp+snli+anli\_r1+paws+imdb+squad\_v2+winogrande & 0.50 & 0.893 & 1.250 & 0.677 \\
+     & mnli+qqp+snli+anli\_r1+paws+squad\_v2+hellaswag+winogrande & 0.60 & 0.893 & 1.250 & 0.672 \\
+     & mnli+qqp+snli+anli\_r1+paws+squad\_v2+winogrande & 0.60 & 0.893 & 1.250 & 0.668 \\
+     & mnli+qqp+snli+imdb+winogrande & 0.70 & 0.893 & 1.250 & 0.620 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.000; single-task fine-tune 0.714}} \\
     \addlinespace
-    mrpc & mnli+qnli & 0.60 & 0.762 & 0.934 & 0.455 \\
-     & mnli+record & 0.75 & 0.723 & 0.885 & 0.476 \\
-     & mnli+qnli+record & 0.55 & 0.718 & 0.879 & 0.506 \\
-     & mnli+qnli+qqp+sst2 & 0.45 & 0.708 & 0.867 & 0.526 \\
-     & mnli+qnli+sst2+record & 0.55 & 0.706 & 0.864 & 0.513 \\
-    & \multicolumn{5}{l}{\textit{zero-shot 0.005; single-task fine-tune 0.816}} \\
+    cola & record+imdb+hellaswag & 0.30 & 0.674 & 0.057 & 0.639 \\
+     & record+imdb & 0.30 & 0.672 & 0.046 & 0.628 \\
+     & imdb+hellaswag & 0.30 & 0.669 & 0.029 & 0.557 \\
+     & record+anli\_r1+imdb & 0.25 & 0.668 & 0.023 & 0.643 \\
+     & mnli+hellaswag & 0.15 & 0.666 & 0.011 & 0.562 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.664; single-task fine-tune 0.832}} \\
     \addlinespace
-    rte & mnli+qqp+sst2 & 0.60 & 0.755 & 1.000 & 0.528 \\
-     & mnli+qnli & 0.45 & 0.751 & 0.993 & 0.511 \\
-     & mnli+qqp & 0.80 & 0.740 & 0.971 & 0.505 \\
-     & mnli+qqp+record & 0.55 & 0.740 & 0.971 & 0.540 \\
-     & mnli+qnli+qqp+sst2 & 0.50 & 0.733 & 0.957 & 0.573 \\
-    & \multicolumn{5}{l}{\textit{zero-shot 0.256; single-task fine-tune 0.755}} \\
+    copa & hellaswag+winogrande & 0.35 & 0.770 & 1.044 & 0.553 \\
+     & anli\_r1+hellaswag+winogrande & 0.35 & 0.760 & 1.022 & 0.574 \\
+     & anli\_r1+imdb+hellaswag+winogrande & 0.30 & 0.760 & 1.022 & 0.586 \\
+     & anli\_r1+imdb+squad\_v2+hellaswag+winogrande & 0.25 & 0.750 & 1.000 & 0.657 \\
+     & anli\_r1+squad\_v2+hellaswag+winogrande & 0.25 & 0.750 & 1.000 & 0.654 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.300; single-task fine-tune 0.750}} \\
+    \addlinespace
+    cr & sst2+record+anli\_r1 & 0.40 & 0.934 & 0.996 & 0.758 \\
+     & qnli+sst2+paws+imdb & 0.40 & 0.931 & 0.993 & 0.753 \\
+     & sst2+anli\_r1+paws & 0.60 & 0.931 & 0.993 & 0.735 \\
+     & sst2+record+squad\_v2 & 0.65 & 0.931 & 0.993 & 0.751 \\
+     & qnli+sst2+anli\_r1 & 0.45 & 0.928 & 0.989 & 0.731 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.184; single-task fine-tune 0.936}} \\
+    \addlinespace
+    mrpc & record+hellaswag & 0.80 & 0.684 & 0.805 & 0.617 \\
+     & record+hellaswag+winogrande & 0.85 & 0.684 & 0.805 & 0.620 \\
+     & record+anli\_r1 & 0.60 & 0.679 & 0.799 & 0.635 \\
+     & record+squad\_v2+hellaswag & 0.60 & 0.679 & 0.799 & 0.652 \\
+     & record+winogrande & 1.20 & 0.679 & 0.799 & 0.612 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.005; single-task fine-tune 0.848}} \\
+    \addlinespace
+    multirc & mnli+qnli+anli\_r1+paws & 0.20 & 0.757 & 0.766 & 0.635 \\
+     & mnli+paws+hellaswag & 0.25 & 0.756 & 0.763 & 0.645 \\
+     & mnli+paws & 0.30 & 0.754 & 0.757 & 0.633 \\
+     & mnli+qnli+anli\_r1+paws+hellaswag & 0.20 & 0.754 & 0.757 & 0.644 \\
+     & mnli+qnli+paws & 0.20 & 0.752 & 0.754 & 0.637 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.440; single-task fine-tune 0.854}} \\
+    \addlinespace
+    piqa & imdb+hellaswag+winogrande & 0.35 & 0.721 & 0.820 & 0.690 \\
+     & anli\_r1+imdb+hellaswag & 0.35 & 0.721 & 0.819 & 0.657 \\
+     & hellaswag+winogrande & 0.40 & 0.720 & 0.817 & 0.686 \\
+     & anli\_r1+hellaswag & 0.45 & 0.717 & 0.810 & 0.657 \\
+     & imdb+hellaswag & 0.45 & 0.715 & 0.807 & 0.650 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.368; single-task fine-tune 0.799}} \\
+    \addlinespace
+    rotten\_tomatoes & sst2+record+imdb & 0.55 & 0.929 & 1.011 & 0.790 \\
+     & sst2+record+anli\_r1+imdb & 0.55 & 0.928 & 1.010 & 0.790 \\
+     & sst2+imdb & 0.50 & 0.927 & 1.008 & 0.765 \\
+     & sst2+record+imdb+hellaswag & 0.45 & 0.927 & 1.008 & 0.790 \\
+     & sst2+imdb+hellaswag & 0.50 & 0.926 & 1.007 & 0.775 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.231; single-task fine-tune 0.921}} \\
+    \addlinespace
+    rte & mnli+qnli+qqp+sst2+anli\_r1+paws+squad\_v2+winogrande & 0.25 & 0.841 & 1.117 & 0.711 \\
+     & mnli+qnli+qqp+anli\_r1+squad\_v2+hellaswag+winogrande & 0.30 & 0.838 & 1.110 & 0.713 \\
+     & mnli+qnli+qqp+sst2+anli\_r1+paws+imdb+winogrande & 0.20 & 0.838 & 1.110 & 0.692 \\
+     & mnli+qnli+qqp+sst2+anli\_r1+squad\_v2+hellaswag & 0.30 & 0.838 & 1.110 & 0.713 \\
+     & mnli+qnli+qqp+record+anli\_r1+squad\_v2+winogrande & 0.30 & 0.834 & 1.103 & 0.719 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.256; single-task fine-tune 0.780}} \\
+    \addlinespace
+    scitail & mnli+qqp+anli\_r1+hellaswag & 0.30 & 0.865 & 0.899 & 0.703 \\
+     & mnli+qqp+record+anli\_r1+paws+squad\_v2+hellaswag+winogrande & 0.25 & 0.865 & 0.899 & 0.731 \\
+     & mnli+qqp+record+anli\_r1+squad\_v2+hellaswag+winogrande & 0.25 & 0.865 & 0.899 & 0.731 \\
+     & mnli+qqp+anli\_r1+paws+squad\_v2+hellaswag+winogrande & 0.25 & 0.864 & 0.898 & 0.726 \\
+     & mnli+qqp+record+anli\_r1+squad\_v2+hellaswag & 0.30 & 0.864 & 0.898 & 0.731 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.012; single-task fine-tune 0.960}} \\
+    \addlinespace
+    stsb & qnli+paws+winogrande & 0.45 & 0.705 & 0.707 & 0.526 \\
+     & qnli+record+winogrande & 0.60 & 0.704 & 0.706 & 0.590 \\
+     & qnli+paws+hellaswag+winogrande & 0.45 & 0.697 & 0.695 & 0.537 \\
+     & qnli+paws+hellaswag & 0.45 & 0.687 & 0.679 & 0.527 \\
+     & qnli+paws & 0.50 & 0.678 & 0.664 & 0.505 \\
+    & \multicolumn{5}{l}{\textit{zero-shot 0.265; single-task fine-tune 0.887}} \\
     \bottomrule
   \end{tabular}
 \end{table}

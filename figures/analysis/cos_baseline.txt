@@ -1,0 +1,189 @@
+
+=== MRPC (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.6838   0.0000       1   0.0%   --      --   ReCoRD + HellaSwag
+random     0.3575   0.3263     885  21.7%   --      --   (mean over all mixtures)
+all        0.3162   0.3676    1882  46.1%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.3211   0.3627    1597  39.1% -0.390   0.00  QNLI + SST-2 + ANLI-R1 + PAWS + IMDb
+dot_mix    0.3162   0.3676    1882  46.1% -0.494   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.4510   0.2328     500  12.2% -0.087   0.00  ANLI-R1 + IMDb
+ts_dot     0.3162   0.3676    1882  46.1% -0.533   0.00  MNLI + QQP
+kc_cos     0.3456   0.3382    1004  24.6% +0.042   0.00  MNLI + SNLI
+kc_dot     0.3456   0.3382    1004  24.6% -0.205   0.00  MNLI + SNLI
+sar        0.3235   0.3603    1477  36.2% -0.162   0.00  QNLI + ReCoRD + ANLI-R1 + PAWS + IMDb + SQuAD v2 + HellaSwag
+sar_iso    0.3162   0.3676    1882  46.1% -0.514   0.00  QNLI + ANLI-R1 + PAWS + IMDb
+
+=== BoolQ (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.6991   0.0000       1   0.0%   --      --   QNLI + ReCoRD + PAWS + HellaSwag + WinoGrande
+random     0.4801   0.2190    2536  62.1%   --      --   (mean over all mixtures)
+all        0.1073   0.5917    3983  97.6%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.5905   0.1086     746  18.3% +0.229   0.00  ANLI-R1 + PAWS
+dot_mix    0.1073   0.5917    3983  97.6% -0.220   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.6260   0.0731     158   3.9% +0.406   0.00  QNLI + PAWS
+ts_dot     0.6260   0.0731     158   3.9% +0.139   0.00  QNLI + PAWS
+kc_cos     0.5621   0.1370    1235  30.2% -0.278   0.00  MNLI + SNLI
+kc_dot     0.5621   0.1370    1235  30.2% -0.350   0.00  MNLI + SNLI
+sar        0.6070   0.0920     382   9.4% +0.439   0.00  QNLI + ReCoRD + PAWS + IMDb + SQuAD v2 + HellaSwag + WinoGra
+sar_iso    0.5905   0.1086     746  18.3% +0.394   0.00  ANLI-R1 + PAWS
+
+=== RTE (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.8412   0.0000       1   0.0%   --      --   MNLI + QNLI + QQP + SST-2 + ANLI-R1 + PAWS + SQuAD v2 + Wino
+random     0.6170   0.2242    1704  41.7%   --      --   (mean over all mixtures)
+all        0.5812   0.2599    2198  53.8%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.6823   0.1588    1183  29.0% +0.191   0.00  QNLI + ANLI-R1 + IMDb
+dot_mix    0.5812   0.2599    2198  53.8% +0.182   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.7292   0.1119     843  20.6% +0.063   0.00  QNLI + ANLI-R1
+ts_dot     0.5271   0.3141    2961  72.5% +0.077   0.00  MNLI + QNLI
+kc_cos     0.5271   0.3141    2961  72.5% -0.065   0.00  MNLI + SNLI
+kc_dot     0.5271   0.3141    2961  72.5% +0.027   0.00  MNLI + SNLI
+sar        0.6968   0.1444    1122  27.5% +0.231   0.00  QNLI + ANLI-R1 + IMDb + SQuAD v2 + HellaSwag
+sar_iso    0.7292   0.1119     843  20.6% +0.134   0.00  QNLI + ANLI-R1
+
+=== CoLA (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.6740   0.0000       1   0.0%   --      --   ReCoRD + IMDb + HellaSwag
+random     0.5513   0.1227    2190  53.6%   --      --   (mean over all mixtures)
+all        0.5321   0.1419    3028  74.2%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.5666   0.1074    1506  36.9% +0.328   0.10  QNLI + SST-2 + ANLI-R1 + PAWS + IMDb
+dot_mix    0.5321   0.1419    3028  74.2% +0.196   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.6654   0.0086       7   0.2% +0.579   0.10  ANLI-R1 + IMDb
+ts_dot     0.2052   0.4688    4072  99.7% +0.342   0.00  MNLI + SNLI
+kc_cos     0.2052   0.4688    4072  99.7% +0.377   0.00  MNLI + SNLI
+kc_dot     0.2052   0.4688    4072  99.7% +0.186   0.00  MNLI + SNLI
+sar        0.5350   0.1390    2923  71.6% -0.384   0.00  SST-2 + ReCoRD + ANLI-R1 + SQuAD v2 + HellaSwag
+sar_iso    0.5417   0.1323    2638  64.6% -0.195   0.00  QNLI + SST-2 + ANLI-R1 + PAWS + IMDb + SQuAD v2 + HellaSwag
+
+=== CB (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.8929   0.0000       1   0.0%   --      --   MNLI + QQP + ReCoRD + SNLI + ANLI-R1 + PAWS + SQuAD v2 + Win
+random     0.6024   0.2905    2377  58.2%   --      --   (mean over all mixtures)
+all        0.8036   0.0893     773  18.9%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.3393   0.5536    3539  86.7% +0.469   0.00  ANLI-R1 + IMDb
+dot_mix    0.8036   0.0893     773  18.9% +0.694   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.3393   0.5536    3539  86.7% +0.246   0.00  ANLI-R1 + IMDb
+ts_dot     0.8036   0.0893     773  18.9% +0.755   0.00  MNLI + SNLI
+kc_cos     0.8036   0.0893     773  18.9% +0.555   0.00  MNLI + SNLI
+kc_dot     0.8036   0.0893     773  18.9% +0.724   0.00  MNLI + SNLI
+sar        0.6071   0.2857    2315  56.7% -0.097   0.00  ANLI-R1 + IMDb + SQuAD v2 + HellaSwag
+sar_iso    0.3393   0.5536    3539  86.7% +0.447   0.00  ANLI-R1 + IMDb
+
+=== SciTail (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.8650   0.0000       1   0.0%   --      --   MNLI + QQP + ANLI-R1 + HellaSwag
+random     0.6944   0.1706    2017  49.4%   --      --   (mean over all mixtures)
+all        0.7559   0.1091    1675  41.0%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.6040   0.2611    2780  68.1% +0.283   0.00  MNLI + QNLI + SST-2 + ANLI-R1 + PAWS + IMDb
+dot_mix    0.7559   0.1091    1675  41.0% +0.383   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.8198   0.0452     734  18.0% +0.185   0.00  MNLI + ANLI-R1
+ts_dot     0.8010   0.0640    1156  28.3% +0.393   0.00  MNLI + SNLI
+kc_cos     0.8010   0.0640    1156  28.3% +0.239   0.00  MNLI + SNLI
+kc_dot     0.8010   0.0640    1156  28.3% +0.341   0.00  MNLI + SNLI
+sar        0.5964   0.2686    3011  73.7% +0.111   0.00  MNLI + QNLI + ReCoRD + ANLI-R1 + PAWS + IMDb + SQuAD v2 + He
+sar_iso    0.5875   0.2775    3308  81.0% +0.263   0.00  MNLI + QNLI + ANLI-R1 + PAWS + IMDb
+
+=== STS-B (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.7051   0.0000       1   0.0%   --      --   QNLI + PAWS + WinoGrande
+random     0.4012   0.3038    1918  47.0%   --      --   (mean over all mixtures)
+all        0.3509   0.3542    2628  64.4%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.3509   0.3542    2628  64.4% +0.316   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+dot_mix    0.3509   0.3542    2628  64.4% +0.050   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.3118   0.3932    3229  79.1% +0.223   0.00  ANLI-R1 + PAWS
+ts_dot     0.3334   0.3716    2877  70.5% +0.047   0.00  QQP + SNLI
+kc_cos     0.2881   0.4169    3537  86.6% -0.114   0.00  MNLI + SNLI
+kc_dot     0.2881   0.4169    3537  86.6% -0.085   0.00  MNLI + SNLI
+sar        0.1992   0.5059    4072  99.7% +0.064   0.00  ReCoRD + ANLI-R1 + PAWS + IMDb + SQuAD v2 + HellaSwag
+sar_iso    0.4790   0.2260    1018  24.9% +0.161   0.00  QNLI + ANLI-R1 + PAWS + IMDb + SQuAD v2 + HellaSwag
+
+=== CR (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.9335   0.0000       1   0.0%   --      --   SST-2 + ReCoRD + ANLI-R1
+random     0.8625   0.0710    2528  61.9%   --      --   (mean over all mixtures)
+all        0.8830   0.0505    1843  45.1%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.9202   0.0133     140   3.4% +0.767   0.00  SST-2 + IMDb
+dot_mix    0.8830   0.0505    1843  45.1% +0.426   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.9202   0.0133     140   3.4% +0.642   0.00  SST-2 + IMDb
+ts_dot     0.9202   0.0133     140   3.4% +0.517   0.00  SST-2 + IMDb
+kc_cos     0.2527   0.6809    4076  99.8% -0.285   0.00  MNLI + SNLI
+kc_dot     0.2527   0.6809    4076  99.8% -0.650   0.00  MNLI + SNLI
+sar        0.9255   0.0080      12   0.3% +0.890   0.10  SST-2 + IMDb + SQuAD v2
+sar_iso    0.9202   0.0133     140   3.4% +0.718   0.10  SST-2 + IMDb
+
+=== Rotten Tomatoes (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.9287   0.0000       1   0.0%   --      --   SST-2 + ReCoRD + IMDb
+random     0.8370   0.0917    2805  68.7%   --      --   (mean over all mixtures)
+all        0.8715   0.0572    1661  40.7%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.9268   0.0019       3   0.1% +0.875   0.40  SST-2 + IMDb
+dot_mix    0.8715   0.0572    1661  40.7% +0.596   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.9268   0.0019       3   0.1% +0.763   0.40  SST-2 + IMDb
+ts_dot     0.9268   0.0019       3   0.1% +0.705   0.30  SST-2 + IMDb
+kc_cos     0.0338   0.8949    4077  99.9% -0.195   0.10  MNLI + SNLI
+kc_dot     0.0338   0.8949    4077  99.9% -0.541   0.00  MNLI + SNLI
+sar        0.9240   0.0047      14   0.3% +0.937   0.10  SST-2 + IMDb + SQuAD v2
+sar_iso    0.9268   0.0019       3   0.1% +0.829   0.40  SST-2 + IMDb
+
+=== MultiRC (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.7572   0.0000       1   0.0%   --      --   MNLI + QNLI + ANLI-R1 + PAWS
+random     0.6281   0.1291    2362  57.8%   --      --   (mean over all mixtures)
+all        0.5390   0.2182    3800  93.1%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.7345   0.0227      45   1.1% +0.640   0.10  ANLI-R1 + PAWS
+dot_mix    0.5390   0.2182    3800  93.1% +0.419   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.7345   0.0227      45   1.1% +0.691   0.10  ANLI-R1 + PAWS
+ts_dot     0.7535   0.0037       3   0.1% +0.543   0.10  MNLI + PAWS
+kc_cos     0.6708   0.0864     700  17.1% -0.039   0.00  MNLI + SNLI
+kc_dot     0.6708   0.0864     700  17.1% +0.091   0.00  MNLI + SNLI
+sar        0.7007   0.0565     309   7.6% +0.393   0.00  ReCoRD + ANLI-R1 + PAWS + SQuAD v2 + HellaSwag
+sar_iso    0.7345   0.0227      45   1.1% +0.660   0.10  ANLI-R1 + PAWS
+
+=== COPA (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.7700   0.0000       1   0.0%   --      --   HellaSwag + WinoGrande
+random     0.4452   0.3248    2396  58.7%   --      --   (mean over all mixtures)
+all        0.5200   0.2500    1736  42.5%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.7600   0.0100       2   0.0% +0.634   0.30  ANLI-R1 + IMDb + HellaSwag + WinoGrande
+dot_mix    0.5200   0.2500    1736  42.5% +0.288   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.7700   0.0000       1   0.0% +0.727   0.50  HellaSwag + WinoGrande
+ts_dot     0.7700   0.0000       1   0.0% +0.633   0.30  HellaSwag + WinoGrande
+kc_cos     0.0100   0.7600    4059  99.4% -0.138   0.00  MNLI + SNLI
+kc_dot     0.0100   0.7600    4059  99.4% -0.343   0.00  MNLI + SNLI
+sar        0.6500   0.1200     381   9.3% +0.117   0.10  ReCoRD + ANLI-R1 + IMDb + SQuAD v2 + HellaSwag + WinoGrande
+sar_iso    0.7300   0.0400       9   0.2% +0.546   0.20  IMDb + HellaSwag + WinoGrande
+
+=== PIQA (4083 mixtures) ===
+signal        acc   regret    rank     pct    rho  ov@10  selected
+oracle     0.7214   0.0000       1   0.0%   --      --   IMDb + HellaSwag + WinoGrande
+random     0.3143   0.4071    2001  49.0%   --      --   (mean over all mixtures)
+all        0.1322   0.5892    3182  77.9%   --      --   MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+cos_mix    0.7198   0.0016       3   0.1% +0.685   0.60  HellaSwag + WinoGrande
+dot_mix    0.1322   0.5892    3182  77.9% +0.409   0.00  MNLI + QNLI + QQP + SST-2 + ReCoRD + SNLI + ANLI-R1 + PAWS +
+ts_cos     0.7198   0.0016       3   0.1% +0.625   0.40  HellaSwag + WinoGrande
+ts_dot     0.7198   0.0016       3   0.1% +0.438   0.10  HellaSwag + WinoGrande
+kc_cos     0.0000   0.7214    4068  99.6% -0.038   0.00  MNLI + SNLI
+kc_dot     0.0000   0.7214    4068  99.6% -0.309   0.00  MNLI + SNLI
+sar        0.5337   0.1877     660  16.2% +0.348   0.00  SQuAD v2 + HellaSwag + WinoGrande
+sar_iso    0.7198   0.0016       3   0.1% +0.547   0.60  HellaSwag + WinoGrande
+
+
+=== aggregate over targets ===
+signal     mean acc  mean reg  med reg  med pct  mean rho  mean ov@10  wins
+oracle       0.7893    0.0000   0.0000    0.0%    --       --       12
+cos_mix      0.6263    0.1630   0.1080   23.6%    +0.419        0.12     0
+dot_mix      0.5327    0.2566   0.2341   50.0%    +0.244        0.00     0
+ts_cos       0.6678    0.1215   0.0339    3.6%    +0.422        0.12     1
+ts_dot       0.6419    0.1474   0.0685   11.4%    +0.338        0.07     1
+kc_cos       0.3750    0.4143   0.3776   79.6%    +0.005        0.01     0
+kc_dot       0.3750    0.4143   0.3776   79.6%    -0.093        0.00     0
+sar          0.6083    0.1811   0.1417   21.8%    +0.241        0.03     0
+sar_iso      0.6346    0.1548   0.1102   19.5%    +0.333        0.12     0
+all          0.5327    0.2566   0.2341   50.0%    --       --        0
+random       0.5659    0.2234   0.2216   55.7%    --       --        0
+
+  regret = oracle accuracy - selected accuracy (lower is better)
+  pct    = selected mixture's percentile in the true ranking (lower is better)
+  wins   = targets where the signal picked an accuracy-best mixture
+
+wrote figures/analysis/cos_baseline.csv

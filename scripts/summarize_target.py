@@ -20,6 +20,13 @@ task-selection method should be compared against. Per (method, combo, target):
                         joined from the CSV written by
                         scripts/compute_target_sar.py (--sar; skipped with a
                         note if that file does not exist).
+  cos_mix / dot_mix /   Weight-space selection signals between the mixture and
+  ts_cos / ts_dot /     the target's task vector: cosine and DTVG's dot
+  kc_cos / kc_dot       product, each over the summed mixture and over the
+                        per-member mean, plus DTVG Knowledge Consistency in
+                        both flavors. Joined from the CSV written by
+                        scripts/compute_task_cos.py (--cos; likewise skipped if
+                        absent). See that script for what each means.
 
 Writes the full table to --out, prints the top --top combos per (method,
 target) ranked by best_acc, and writes the same ranking as a booktabs LaTeX
@@ -37,11 +44,13 @@ from __future__ import annotations
 import argparse
 import csv
 import glob
-import json
 import os
 from collections import defaultdict
 
 import numpy as np
+
+from combo_names import parse_combo
+from reference_scores import reference_score
 
 MERGED_ROOT = "saves_bts_merged"
 PRELIM_ROOT = "saves_bts_preliminary"
@@ -61,23 +70,6 @@ def read_acc_coef(path):
     return np.array(coefs), tasks, {t: np.array(v) for t, v in cols.items()}
 
 
-def _exact_match(pattern):
-    """exact_match from the first compute_metrics.jsonl matching, else None.
-
-    Same source as utils._eval_exact_match (correct for every task incl. ReCoRD),
-    kept dependency-free here like summarize_merged.py.
-    """
-    hits = sorted(glob.glob(pattern))
-    if not hits:
-        return None
-    metrics = {}
-    with open(hits[0]) as f:
-        for line in f:
-            if line.strip():
-                metrics.update(json.loads(line))
-    return metrics.get("exact_match")
-
-
 _single, _zero = {}, {}
 
 
@@ -85,16 +77,18 @@ def single_task_acc(method, model, seed, task):
     """The target's own single-task fine-tune accuracy (NAI's ceiling)."""
     key = (method, task)
     if key not in _single:
-        _single[key] = _exact_match(
-            f"{PRELIM_ROOT}/{method}/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl")
+        _single[key] = reference_score(
+            f"{PRELIM_ROOT}/{method}/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl",
+            task)
     return _single[key]
 
 
 def zero_shot_acc(model, seed, task):
     """Pretrained-model accuracy (NAI's floor); method-independent."""
     if task not in _zero:
-        _zero[task] = _exact_match(
-            f"{PRELIM_ROOT}/zero-shot/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl")
+        _zero[task] = reference_score(
+            f"{PRELIM_ROOT}/zero-shot/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl",
+            task)
     return _zero[task]
 
 
@@ -118,6 +112,27 @@ def read_sar(path):
                 float(r["sar"]) if r["sar"] else None,
                 float(r["sar_iso"]) if r["sar_iso"] else None,
             )
+    return out
+
+
+COS_FIELDS = ("cos_mix", "dot_mix", "ts_cos", "ts_dot", "kc_cos", "kc_dot")
+
+
+def read_cos(path):
+    """{(method, combo, target): {field: value}} from compute_task_cos.py's CSV.
+
+    Same shape as read_sar, for the cosine-similarity selection signals: they
+    are joined here rather than recomputed so every consumer of
+    target_summary.csv sees the geometry signals and the brute-force accuracy
+    side by side, on exactly the same (combo, target) rows.
+    """
+    out = {}
+    with open(path, newline="") as f:
+        for r in csv.DictReader(f):
+            out[(r["method"], r["combo"], r["target"])] = {
+                k: (float(r[k]) if r.get(k) not in (None, "") else None)
+                for k in COS_FIELDS
+            }
     return out
 
 
@@ -159,6 +174,75 @@ def build_tex_table(cells, top, model, seed, caption, label):
                     f"    {tcell} & {tex_escape(r['combo'])} & "
                     f"{fmt(r['best_coef'], 2)} & {fmt(r['best_acc'])} & {fmt(r['nai'])} & "
                     f"{fmt(r['sar'])} \\\\")
+            zs = zero_shot_acc(model, seed, target)
+            ft = single_task_acc(method, model, seed, target)
+            lines.append(
+                f"    & \\multicolumn{{5}}{{l}}{{\\textit{{zero-shot {fmt(zs)}; "
+                f"single-task fine-tune {fmt(ft)}}}}} \\\\")
+
+    lines += [r"    \bottomrule", r"  \end{tabular}", r"\end{table}", ""]
+    return "\n".join(lines)
+
+
+def per_target_winners(rows, top):
+    """{(method, target): [best rows]} — the mixtures that transfer best to each
+    target.
+
+    Ranked by `best_acc` (accuracy at the coefficient best for that target), the
+    same key the printed ranking uses. Ties break towards the smaller mixture —
+    reaching the same accuracy with fewer source tasks is the better result, and
+    the cheaper one to fine-tune — then by name so the output is deterministic.
+    """
+    cells = defaultdict(list)
+    for r in rows:
+        cells[(r["method"], r["target"])].append(r)
+
+    out = {}
+    for key, rs in cells.items():
+        rs = sorted(rs, key=lambda r: (-r["best_acc"], r["n_tasks"], r["combo"]))
+        best = rs[0]["best_acc"]
+        n_tied = sum(1 for r in rs if abs(r["best_acc"] - best) < 1e-12)
+        picked = []
+        for r in rs[:top]:
+            r = dict(r)
+            r["n_tied"] = n_tied if abs(r["best_acc"] - best) < 1e-12 else 1
+            r["n_candidates"] = len(rs)
+            picked.append(r)
+        out[key] = picked
+    return out
+
+
+def build_winners_tex(winners, model, seed, caption, label):
+    """Booktabs table of the winning mixture per target, one block per target."""
+    fmt = lambda v, p=3: "--" if v is None else f"{v:.{p}f}"
+    methods = sorted({m for m, _ in winners})
+
+    lines = [
+        r"\begin{table}[t]",
+        r"  \centering",
+        f"  \\caption{{{caption}}}",
+        f"  \\label{{{label}}}",
+        r"  \begin{tabular}{llrrrr}",
+        r"    \toprule",
+        r"    Target & Best combination & $k$ & coef & acc & NAI \\",
+        r"    \midrule",
+    ]
+
+    for mi, method in enumerate(methods):
+        if mi > 0:
+            lines.append(r"    \midrule")
+        if len(methods) > 1:
+            lines.append(f"    \\multicolumn{{6}}{{l}}{{\\textbf{{{tex_escape(method)}}}}} \\\\")
+        targets = sorted(t for m, t in winners if m == method)
+        for ti, target in enumerate(targets):
+            if ti > 0:
+                lines.append(r"    \addlinespace")
+            for ri, r in enumerate(winners[(method, target)]):
+                tcell = tex_escape(target) if ri == 0 else ""
+                tie = f" ({r['n_tied']} tied)" if ri == 0 and r["n_tied"] > 1 else ""
+                lines.append(
+                    f"    {tcell} & {tex_escape(r['combo'])}{tie} & {r['n_tasks']} & "
+                    f"{fmt(r['best_coef'], 2)} & {fmt(r['best_acc'])} & {fmt(r['nai'])} \\\\")
             zs = zero_shot_acc(model, seed, target)
             ft = single_task_acc(method, model, seed, target)
             lines.append(
@@ -326,8 +410,27 @@ def main():
     ap.add_argument("--matrix-label", default="tab:target-transfer-full")
     ap.add_argument("--sar", default="figures/target/target_sar.csv",
                     help="target-SAR CSV from compute_target_sar.py to join in")
+    ap.add_argument("--cos", default="figures/target/target_cos.csv",
+                    help="cosine-signal CSV from compute_task_cos.py to join in")
     ap.add_argument("--scatter", default="figures/target/target_sar_scatter.png",
                     help="accuracy-vs-SAR scatter path (skipped if no sar values)")
+    ap.add_argument("--keep-degenerate", action="store_true",
+                    help="keep targets whose column is mostly exact zeros (see "
+                         "the note printed for them) instead of dropping them")
+    ap.add_argument("--winners", default="figures/target/target_best_per_target.csv",
+                    help="CSV of the best combination(s) per target task")
+    ap.add_argument("--winners-tex", default=None,
+                    help="LaTeX path for the winners table (default: --winners .csv -> .tex)")
+    ap.add_argument("--winners-caption", default=None)
+    ap.add_argument("--winners-label", default="tab:target-best-per-target")
+    ap.add_argument("--winners-top", type=int, default=1,
+                    help="combinations to keep per target in the winners table "
+                         "(default 1: the winner only; --top controls the longer "
+                         "ranking table instead)")
+    ap.add_argument("--degenerate-frac", type=float, default=0.5,
+                    help="share of a target's combos scoring exactly 0 above "
+                         "which the column is treated as a metric mismatch "
+                         "rather than a result (default 0.5)")
     args = ap.parse_args()
 
     if os.path.exists(args.sar):
@@ -337,8 +440,16 @@ def main():
         print(f"note: {args.sar} not found — sar columns will be empty "
               "(run scripts/compute_target_sar.py first)\n")
 
+    if os.path.exists(args.cos):
+        cos_vals = read_cos(args.cos)
+    else:
+        cos_vals = {}
+        print(f"note: {args.cos} not found — cosine columns will be empty "
+              "(run scripts/compute_task_cos.py first)\n")
+
     target_order = []
     rows = []
+    nonzero = defaultdict(int)
     for method_dir in sorted(glob.glob(f"{MERGED_ROOT}/*/{args.model}")):
         method = method_dir.split(os.sep)[-2]
         for csvf in sorted(glob.glob(
@@ -347,24 +458,60 @@ def main():
             for t in targets:
                 if t not in target_order:
                     target_order.append(t)
-            combo = "+".join(os.path.basename(csvf)
-                             .removesuffix(f"_{args.seed}_target_acc_coef.csv").split("_"))
+            tasks = parse_combo(os.path.basename(csvf)
+                                .removesuffix(f"_{args.seed}_target_acc_coef.csv"))
+            combo = "+".join(tasks)
             for target in targets:
                 curve = accs[target]
                 bi = int(np.argmax(curve))
                 zs = zero_shot_acc(args.model, args.seed, target)
                 ft = single_task_acc(method, args.model, args.seed, target)
                 sar, sar_iso = sar_vals.get((method, combo, target), (None, None))
+                nonzero[target] += int(np.any(curve > 0))
                 rows.append(dict(
-                    method=method, combo=combo, n_tasks=combo.count("+") + 1,
+                    method=method, combo=combo, n_tasks=len(tasks),
                     target=target,
                     best_coef=float(coefs[bi]), best_acc=float(curve[bi]),
                     nai=nai(float(curve[bi]), zs, ft),
                     sar=sar, sar_iso=sar_iso,
+                    **cos_vals.get((method, combo, target),
+                                   dict.fromkeys(COS_FIELDS)),
                 ))
 
     if not rows:
         raise SystemExit(f"no *_target_acc_coef.csv found under {MERGED_ROOT}/*/{args.model}")
+
+    # A target scored exactly 0 across the grid is a metric mismatch, not a
+    # result: it means the merged eval scored it with something that cannot
+    # express it (stsb is a regression task, and the trainer's default
+    # ComputeClassification does exact string match on its float targets).
+    #
+    # The test is a *share* of the grid rather than "all of it", because the
+    # column stays mixed for as long as it takes to re-run the affected combos
+    # with the corrected metric — and a half-repaired column is still not
+    # something to aggregate. A genuine 0 does happen at a bad coefficient
+    # (copa and piqa each have a handful), which is why this is a threshold and
+    # not "any". Checking the data rather than a task list means a target
+    # rejoins on its own once its re-run lands.
+    total = defaultdict(int)
+    for r in rows:
+        total[r["target"]] += 1
+    degenerate = sorted(t for t in target_order
+                        if total[t] and 1 - nonzero[t] / total[t] > args.degenerate_frac)
+    if degenerate:
+        shares = ", ".join(
+            f"{t} ({1 - nonzero[t] / total[t]:.1%} of {total[t]} combos)" for t in degenerate)
+        print(f"note: {shares} scored exactly 0 — metric mismatch in the merged "
+              f"eval, not transfer failure"
+              f"{'' if args.keep_degenerate else '; dropping their rows'}. "
+              "Re-run those combos after fixing the task's entry in "
+              "src/metrics.py:TASK_COMPUTE_METRICS; the share falls as the "
+              "re-run progresses and the target rejoins below "
+              f"{args.degenerate_frac:.0%}.\n")
+        if not args.keep_degenerate:
+            drop = set(degenerate)
+            rows = [r for r in rows if r["target"] not in drop]
+            target_order = [t for t in target_order if t not in drop]
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", newline="") as f:
@@ -407,6 +554,47 @@ def main():
         f.write(table)
     print(table)
     print(f"% wrote {tex_path}\n")
+
+    # ---- per-target winners: which mixture transfers best to each target ----
+    winners = per_target_winners(rows, args.winners_top)
+
+    flat = [r for key in sorted(winners) for r in winners[key]]
+    with open(args.winners, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(flat[0].keys()))
+        w.writeheader()
+        w.writerows(flat)
+    print(f"wrote {args.winners} ({len(flat)} rows)\n")
+
+    for method in sorted({m for m, _ in winners}):
+        print(f"== {method}: best source mixture per target "
+              f"(acc at the coefficient best for that target) ==")
+        print(f"   {'target':16} {'combo':52} {'k':>2} {'coef':>5} {'acc':>7} "
+              f"{'nai':>7} {'zero':>6} {'ft':>6} {'cands':>6}")
+        for target in sorted(t for m, t in winners if m == method):
+            zs = zero_shot_acc(args.model, args.seed, target)
+            ft = single_task_acc(method, args.model, args.seed, target)
+            for r in winners[(method, target)]:
+                tie = f" (+{r['n_tied'] - 1} tied)" if r["n_tied"] > 1 else ""
+                print(f"   {target:16} {r['combo'][:52]:52} {r['n_tasks']:>2} "
+                      f"{r['best_coef']:>5.2f} {r['best_acc']:>7.3f} "
+                      f"{fmt(r['nai']):>7} {fmt(zs, 2):>6} {fmt(ft, 2):>6} "
+                      f"{r['n_candidates']:>6}{tie}")
+        print()
+
+    winners_caption = args.winners_caption or (
+        f"Best source-task mixture per target task for {tex_escape(args.model)} "
+        f"(seed {args.seed}), out of every evaluated combination. acc is the "
+        "target's accuracy at the merge coefficient best for that target; NAI "
+        "normalizes it between the pretrained model and the target's own "
+        "single-task fine-tune."
+    )
+    winners_tex = args.winners_tex or (
+        args.winners[:-4] + ".tex" if args.winners.endswith(".csv")
+        else args.winners + ".tex")
+    with open(winners_tex, "w") as f:
+        f.write(build_winners_tex(winners, args.model, args.seed, winners_caption,
+                                  args.winners_label))
+    print(f"% wrote {winners_tex}\n")
 
     # full combos x targets matrix: pivot CSV + LaTeX
     methods = sorted({r["method"] for r in rows})

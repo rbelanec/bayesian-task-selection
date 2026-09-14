@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from task_vector import TaskVector
 
-from typing import Optional, Any
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +32,24 @@ def nai(datasets, zsh, ft, merged):
     return {ds: (merged[ds] - zsh[ds]) / (ft[ds] - zsh[ds]) for ds in datasets}
 
 
-def _eval_exact_match(pattern: str) -> float:
+# scripts/compute_metrics.py stores these tasks' scores on `evaluate`'s 0-100
+# scale while every other task is 0-1, so reading one back without the /100 puts
+# it two orders of magnitude above the merged accuracy it is meant to be the
+# ceiling for. compute_metrics.py applies the same correction when it builds
+# results.tex; src/metrics.py normalizes at source for the merge sweep.
+PERCENT_SCALE_TASKS = frozenset({"squad_v2"})
+
+
+def _eval_exact_match(pattern: str, task: str | None = None) -> float:
     """`exact_match` from the first compute_metrics.jsonl matching `pattern`.
 
     Each line is a JSON object; we merge them (a task may log macro_f1/f1 on one
     line and exact_match on another). `exact_match` is the correct accuracy for
     every task, including ReCoRD — whose predict_results.json holds a wrong,
     naive per-row number instead (see src/tests/record_metric.py).
+
+    `task` selects the scale correction: pass it for anything in
+    PERCENT_SCALE_TASKS, otherwise the value is returned as stored.
     """
     hits = sorted(glob.glob(pattern))
     if not hits:
@@ -50,20 +61,23 @@ def _eval_exact_match(pattern: str) -> float:
                 metrics.update(json.loads(line))
     if "exact_match" not in metrics:
         raise KeyError(f"no 'exact_match' in {hits[0]} (have {list(metrics)})")
-    return float(metrics["exact_match"])
+    score = float(metrics["exact_match"])
+    return score / 100 if task in PERCENT_SCALE_TASKS else score
 
 
 def zero_shot_acc(model: str, seed: int, task: str) -> float:
     # Pretrained-model accuracy (no fine-tuning); method-independent.
     return _eval_exact_match(
-        f"saves_bts_preliminary/zero-shot/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl"
+        f"saves_bts_preliminary/zero-shot/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl",
+        task,
     )
 
 
 def finetuned_acc(method: str, model: str, seed: int, task: str) -> float:
     # Single-task fine-tuned accuracy (NAI's per-task ceiling).
     return _eval_exact_match(
-        f"saves_bts_preliminary/{method}/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl"
+        f"saves_bts_preliminary/{method}/{model}/eval_{task}_{seed}_*/compute_metrics.jsonl",
+        task,
     )
 
 
@@ -106,6 +120,14 @@ def calc_rank(S, norm_thresh=0.95):
 
 def alignment_ratio(S, S_proj):
     # Subspace alignment ratio based on norms of projected task matrix vs norm of the original one (Eq. 5) in the paper
+    #
+    # NOTE: S/S_proj are 1-D singular-value arrays, and for a 1-D input
+    # np.linalg.norm(..., ord=2) is the Euclidean norm — sqrt(sum of squares of
+    # the singular values), which is exactly the Frobenius norm of the matrix
+    # they came from. So this ratio never needed the singular values at all;
+    # _sar_modes computes it straight from the matrices. Kept for callers that
+    # already hold spectra (and as the reference the fast path is checked
+    # against).
     return np.linalg.norm(S_proj, ord=2) / np.linalg.norm(S, ord=2)
 
 
@@ -137,6 +159,49 @@ def sar(
     vectors (e.g. held-out target tasks) onto the mixture subspace — the
     subspace is still built from `task_vectors` only.
     """
+    return _sar_modes(
+        task_vectors, tasks, rank_threshold, device,
+        modes=("iso",) if iso else ("sum",),
+        probe_vectors=probe_vectors, probe_tasks=probe_tasks,
+    )["iso" if iso else "sum"]
+
+
+@torch.no_grad()
+def sar_both(
+    task_vectors: list[TaskVector],
+    tasks: list[str],
+    rank_threshold: float = 0.95,
+    device: str = "cpu",
+    probe_vectors: list[TaskVector] | None = None,
+    probe_tasks: list[str] | None = None,
+) -> tuple[dict[str, float], dict[str, float]]:
+    """`(sar, sar_iso)` in one pass — same values as two `sar()` calls.
+
+    Both modes build their subspace from the *same* summed task vector, and
+    `iso` only flattens the spectrum used to choose the rank; the left singular
+    vectors are identical. Calling `sar()` twice therefore paid for that SVD
+    (and every probe's device transfer) twice over.
+    """
+    out = _sar_modes(task_vectors, tasks, rank_threshold, device,
+                     modes=("sum", "iso"),
+                     probe_vectors=probe_vectors, probe_tasks=probe_tasks)
+    return out["sum"], out["iso"]
+
+
+@torch.no_grad()
+def _sar_modes(task_vectors, tasks, rank_threshold, device, modes,
+               probe_vectors=None, probe_tasks=None):
+    """Shared engine for `sar` / `sar_both`; see `sar` for the semantics.
+
+    The per-probe work here is one thin matmul and two Frobenius norms. The
+    original formulation SVD'd both the probe and its projection only to reduce
+    each spectrum to its Euclidean norm — see `alignment_ratio`. Dropping those
+    two SVDs removes 24 of the 25 decompositions per (matrix, mixture) and
+    leaves the one that actually defines the subspace.
+
+    ||U_k U_k^T tv||_F == ||U_k^T tv||_F because U_k has orthonormal columns, so
+    the projection is never formed at full size either.
+    """
     assert len(task_vectors) == len(tasks), "need one task name per task vector"
     if probe_vectors is None:
         probe_vectors, probe_tasks = task_vectors, tasks
@@ -144,39 +209,44 @@ def sar(
 
     # SAR is only defined for 2D weight matrices (skip biases / norms / 1D).
     keys_2d = [k for k in task_vectors[0].vector if task_vectors[0].vector[k].dim() == 2]
-    mode = "iso" if iso else "sum"
     logger.info(
         "sar[%s]: %d matrices, subspace from %d tasks, %d probes on %s",
-        mode, len(keys_2d), len(tasks), len(probe_tasks), device,
+        "+".join(modes), len(keys_2d), len(tasks), len(probe_tasks), device,
     )
     t0 = time.perf_counter()
 
-    alignment_ratios: dict[str, list[float]] = {task: [] for task in probe_tasks}
+    ratios = {m: {task: [] for task in probe_tasks} for m in modes}
     for i, key in enumerate(keys_2d, 1):
         tk = time.perf_counter()
         merge_by_sum = sum(tv.vector[key].to(device) for tv in task_vectors)
         U, S, _ = torch.linalg.svd(merge_by_sum, full_matrices=False)
 
-        if iso:
-            S = torch.ones_like(S) * S.mean()
-        rel_rank = calc_rank(S.cpu(), norm_thresh=rank_threshold)
-        U_k = U[:, :rel_rank]
+        # Moved once per matrix and reused by every mode, not once per (mode, probe).
+        probes = [(task, ptv.vector[key].to(device))
+                  for task, ptv in zip(probe_tasks, probe_vectors)]
+        probe_fro = {task: torch.linalg.matrix_norm(pm, "fro")
+                     for task, pm in probes}
 
-        for task, ptv in zip(probe_tasks, probe_vectors):
-            tv = ptv.vector[key].to(device)
-            _, S_tv, _ = torch.linalg.svd(tv, full_matrices=False)
-            proj = torch.linalg.multi_dot((U_k, U_k.T, tv))
-            _, S_proj, _ = torch.linalg.svd(proj, full_matrices=False)
-            alignment_ratios[task].append(alignment_ratio(S_tv.cpu(), S_proj.cpu()))
+        ranks = {}
+        for mode in modes:
+            S_mode = torch.ones_like(S) * S.mean() if mode == "iso" else S
+            rel_rank = calc_rank(S_mode.cpu(), norm_thresh=rank_threshold)
+            ranks[mode] = rel_rank
+            U_k = U[:, :rel_rank]
+            for task, pm in probes:
+                num = torch.linalg.matrix_norm(U_k.T @ pm, "fro")
+                ratios[mode][task].append(float(num / probe_fro[task]))
 
         logger.info(
-            "sar[%s] %d/%d %s shape=%s rank=%d (%.1fs, total %.1fs)",
-            mode, i, len(keys_2d), key, tuple(merge_by_sum.shape), rel_rank,
+            "sar[%s] %d/%d %s shape=%s rank=%s (%.1fs, total %.1fs)",
+            "+".join(modes), i, len(keys_2d), key, tuple(merge_by_sum.shape),
+            ",".join(f"{m}={ranks[m]}" for m in modes),
             time.perf_counter() - tk, time.perf_counter() - t0,
         )
 
-    logger.info("sar[%s]: done in %.1fs", mode, time.perf_counter() - t0)
-    return {task: float(np.mean(ar)) for task, ar in alignment_ratios.items() if ar}
+    logger.info("sar[%s]: done in %.1fs", "+".join(modes), time.perf_counter() - t0)
+    return {m: {task: float(np.mean(ar)) for task, ar in d.items() if ar}
+            for m, d in ratios.items()}
 
 
 def get_task_combinations(tasks: list[str]):
@@ -219,32 +289,68 @@ def plot_acc_coef_csv(csv_path: str | Path) -> None:
     plt.close(fig)
 
 
-def build_task_vectors(model, method, seed, tasks) -> list[TaskVector]:
-    """Per-task TaskVectors for a combo (individual, not summed)."""
-    pretrained_checkpoint = (
-        f"saves_pretrained_weights/{method}/{model}/pretrained_weights_{seed}"
-    )
+#: A training run only counts as a usable checkpoint once one of these exists at
+#: the top level of its output dir. A run that was killed (or OOM'd) mid-training
+#: leaves behind the dir with just train.yaml, which loads fine as a *path* but
+#: blows up inside from_pretrained several minutes later.
+_WEIGHT_FILES = ("model.safetensors", "model.safetensors.index.json", "pytorch_model.bin", "pytorch_model.bin.index.json")
 
-    task_vectors = []
-    for task in tasks:
-        pattern = f"saves_bts_preliminary/{method}/{model}/train_{task}_{seed}_*"
-        matches = glob.glob(pattern)
 
-        if not matches:
-            raise FileNotFoundError(
-                f"No checkpoint found for task '{task}' matching: {pattern}"
-            )
+def _has_weights(checkpoint: str) -> bool:
+    return any(Path(checkpoint, f).exists() for f in _WEIGHT_FILES)
 
-        finetuned_checkpoint = matches[0]
-        task_vectors.append(
-            create_task_vector(
-                pretrained_checkpoint,
-                finetuned_checkpoint,
-                target_modules=METHODS_TO_TARGET_MODULES[method],
-            )
+
+def pretrained_checkpoint(model, method, seed) -> str:
+    """The merge origin: the pretrained weights every task vector is measured from."""
+    return f"saves_pretrained_weights/{method}/{model}/pretrained_weights_{seed}"
+
+
+def find_finetuned_checkpoint(model, method, seed, task) -> str:
+    """The single-task fine-tune to subtract the pretrained weights from.
+
+    Split out of `build_task_vectors` so consumers that need the checkpoint
+    *path* rather than a materialized TaskVector — scripts/compute_task_cos.py
+    reads the tensors key-by-key, because 24 full task vectors do not fit in
+    RAM — resolve it by exactly the same rules, instead of reimplementing the
+    "several runs, some without weights" handling below and drifting from it.
+    """
+    pattern = f"saves_bts_preliminary/{method}/{model}/train_{task}_{seed}_*"
+    matches = glob.glob(pattern)
+
+    if not matches:
+        raise FileNotFoundError(
+            f"No checkpoint found for task '{task}' matching: {pattern}"
         )
 
-    return task_vectors
+    # A task can have several runs (e.g. a failed one plus its rerun). glob
+    # returns them in filesystem order, so skip the ones that never saved
+    # weights and take the newest of what's left.
+    usable = sorted(filter(_has_weights, matches), key=lambda p: Path(p).stat().st_mtime)
+    if not usable:
+        raise FileNotFoundError(
+            f"No checkpoint with saved weights for task '{task}'; "
+            f"{len(matches)} dir(s) matched {pattern} but none contain any of {_WEIGHT_FILES}: "
+            f"{sorted(matches)}"
+        )
+    if len(usable) < len(matches):
+        logger.warning(
+            "Task '%s': ignoring %d checkpoint dir(s) without saved weights (%s)",
+            task, len(matches) - len(usable), sorted(set(matches) - set(usable)),
+        )
+
+    return usable[-1]
+
+
+def build_task_vectors(model, method, seed, tasks) -> list[TaskVector]:
+    """Per-task TaskVectors for a combo (individual, not summed)."""
+    return [
+        create_task_vector(
+            pretrained_checkpoint(model, method, seed),
+            find_finetuned_checkpoint(model, method, seed, task),
+            target_modules=METHODS_TO_TARGET_MODULES[method],
+        )
+        for task in tasks
+    ]
 
 
 def create_vector_combination(model, method, seed, tasks) -> dict[str, TaskVector]:

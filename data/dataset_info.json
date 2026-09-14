@@ -574,5 +574,342 @@
       "prompt": "inputs",
       "response": "targets"
     }
+  },
+  "snli": {
+    "hf_hub_url": "stanfordnlp/snli",
+    "split": "train",
+    "instruction": "Classify the following premise and hypothesis pair into entailment, neutral, and contradiction classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "premise",
+      "query": "hypothesis",
+      "response": "label"
+    }
+  },
+  "snli_eval": {
+    "hf_hub_url": "stanfordnlp/snli",
+    "split": "test",
+    "instruction": "Classify the following premise and hypothesis pair into entailment, neutral, and contradiction classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "premise",
+      "query": "hypothesis",
+      "response": "label"
+    }
+  },
+  "anli_r1": {
+    "hf_hub_url": "facebook/anli",
+    "split": "train_r1",
+    "instruction": "Classify the following premise and hypothesis pair into entailment, neutral, and contradiction classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "premise",
+      "query": "hypothesis",
+      "response": "label"
+    }
+  },
+  "anli_r1_eval": {
+    "hf_hub_url": "facebook/anli",
+    "split": "test_r1",
+    "instruction": "Classify the following premise and hypothesis pair into entailment, neutral, and contradiction classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "premise",
+      "query": "hypothesis",
+      "response": "label"
+    }
+  },
+  "anli_r2": {
+    "hf_hub_url": "facebook/anli",
+    "split": "train_r2",
+    "instruction": "Classify the following premise and hypothesis pair into entailment, neutral, and contradiction classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "premise",
+      "query": "hypothesis",
+      "response": "label"
+    }
+  },
+  "anli_r2_eval": {
+    "hf_hub_url": "facebook/anli",
+    "split": "test_r2",
+    "instruction": "Classify the following premise and hypothesis pair into entailment, neutral, and contradiction classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "premise",
+      "query": "hypothesis",
+      "response": "label"
+    }
+  },
+  "anli_r3": {
+    "hf_hub_url": "facebook/anli",
+    "split": "train_r3",
+    "instruction": "Classify the following premise and hypothesis pair into entailment, neutral, and contradiction classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "premise",
+      "query": "hypothesis",
+      "response": "label"
+    }
+  },
+  "anli_r3_eval": {
+    "hf_hub_url": "facebook/anli",
+    "split": "test_r3",
+    "instruction": "Classify the following premise and hypothesis pair into entailment, neutral, and contradiction classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "premise",
+      "query": "hypothesis",
+      "response": "label"
+    }
+  },
+  "scitail": {
+    "hf_hub_url": "allenai/scitail",
+    "subset": "snli_format",
+    "split": "train",
+    "instruction": "Classify the following sentence pair into entailment and neutral classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "sentence1",
+      "query": "sentence2",
+      "response": "gold_label"
+    }
+  },
+  "scitail_eval": {
+    "hf_hub_url": "allenai/scitail",
+    "subset": "snli_format",
+    "split": "test",
+    "instruction": "Classify the following sentence pair into entailment and neutral classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "sentence1",
+      "query": "sentence2",
+      "response": "gold_label"
+    }
+  },
+  "cr": {
+    "hf_hub_url": "SetFit/CR",
+    "split": "train",
+    "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "text",
+      "response": "label_text"
+    }
+  },
+  "cr_eval": {
+    "hf_hub_url": "SetFit/CR",
+    "split": "test",
+    "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "text",
+      "response": "label_text"
+    }
+  },
+  "imdb": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "imdb",
+    "split": "train",
+    "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    }
+  },
+  "imdb_eval": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "imdb",
+    "split": "test",
+    "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    }
+  },
+  "rotten_tomatoes": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "rotten_tomatoes",
+    "split": "train",
+    "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    }
+  },
+  "rotten_tomatoes_eval": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "rotten_tomatoes",
+    "split": "test",
+    "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    }
+  },
+  "paws": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "paws",
+    "split": "train",
+    "instruction": "Based on the equivalence of following sentence pair, classify it with true or false. Respond only with the corresponding true or false.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    }
+  },
+  "paws_eval": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "paws",
+    "split": "test",
+    "instruction": "Based on the equivalence of following sentence pair, classify it with true or false. Respond only with the corresponding true or false.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    }
+  },
+  "squad_v2": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "squad_v2",
+    "split": "train",
+    "instruction": "Based on the context, answer the following question. If the answer is not present in the context, respond with 'unanswerable'.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    }
+  },
+  "squad_v2_eval": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "squad_v2",
+    "split": "validation",
+    "instruction": "Based on the context, answer the following question. If the answer is not present in the context, respond with 'unanswerable'.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    }
+  },
+  "rte_100": {
+    "hf_hub_url": "nyu-mll/glue",
+    "subset": "rte",
+    "split": "train",
+    "instruction": "Classify the following sentence pair into entailment and not_entailment classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "sentence1",
+      "query": "sentence2",
+      "response": "label"
+    },
+    "num_samples": 100
+  },
+  "cb_100": {
+    "hf_hub_url": "super_glue",
+    "subset": "cb",
+    "split": "train",
+    "instruction": "Classify the following premise and hypothesis pair into entailment, contradiction, and neutral classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "premise",
+      "query": "hypothesis",
+      "response": "label"
+    },
+    "num_samples": 100
+  },
+  "scitail_100": {
+    "hf_hub_url": "allenai/scitail",
+    "subset": "snli_format",
+    "split": "train",
+    "instruction": "Classify the following sentence pair into entailment and neutral classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "sentence1",
+      "query": "sentence2",
+      "response": "gold_label"
+    },
+    "num_samples": 100
+  },
+  "mrpc_100": {
+    "hf_hub_url": "nyu-mll/glue",
+    "subset": "mrpc",
+    "split": "train",
+    "instruction": "Classify the following sentence pair into not_equivalent and equivalent classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "sentence1",
+      "query": "sentence2",
+      "response": "label"
+    },
+    "num_samples": 100
+  },
+  "stsb_100": {
+    "hf_hub_url": "nyu-mll/glue",
+    "subset": "stsb",
+    "split": "train",
+    "instruction": "Assign a similarity score from 0 to 5 to the following sentence pair. Respond only with the corresponding score.",
+    "columns": {
+      "prompt": "sentence1",
+      "query": "sentence2",
+      "response": "label"
+    },
+    "num_samples": 100
+  },
+  "cr_100": {
+    "hf_hub_url": "SetFit/CR",
+    "split": "train",
+    "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "text",
+      "response": "label_text"
+    },
+    "num_samples": 100
+  },
+  "rotten_tomatoes_100": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "rotten_tomatoes",
+    "split": "train",
+    "instruction": "Classify the following sentence into negative and positive classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    },
+    "num_samples": 100
+  },
+  "cola_100": {
+    "hf_hub_url": "nyu-mll/glue",
+    "subset": "cola",
+    "split": "train",
+    "instruction": "Classify the following sentence into unacceptable and acceptable classes. Respond only with the corresponding class.",
+    "columns": {
+      "prompt": "sentence",
+      "response": "label"
+    },
+    "num_samples": 100
+  },
+  "boolq_100": {
+    "hf_hub_url": "super_glue",
+    "subset": "boolq",
+    "split": "train",
+    "instruction": "Based on the passage, respond to the following question with true or false. Respond only with the corresponding true or false.",
+    "columns": {
+      "prompt": "question",
+      "query": "passage",
+      "response": "label"
+    },
+    "num_samples": 100
+  },
+  "multirc_100": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "multirc",
+    "split": "train",
+    "instruction": "Based on the following paragraph, question, and answer, determine whether the answer answers the question. Respond only with the corresponding true or false.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    },
+    "num_samples": 100
+  },
+  "copa_100": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "copa",
+    "split": "train",
+    "instruction": "Based on the following premise and choice pair, select the plausible alternative from choice pair. Respond only with the corresponding choice1 or choice2.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    },
+    "num_samples": 100
+  },
+  "piqa_100": {
+    "hf_hub_url": "kinit/peft-factory",
+    "subset": "piqa",
+    "split": "train",
+    "instruction": "Based on the question and provided solutions, select the right solution. Respond only with the corresponding solution1 or solution2.",
+    "columns": {
+      "prompt": "inputs",
+      "response": "targets"
+    },
+    "num_samples": 100
   }
 }

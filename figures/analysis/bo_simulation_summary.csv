@@ -1,5 +1,13 @@
 target,true_best,true_best_combo,sar_pick,sar_pick_acc,greedy_pick,greedy_first_acc,bo_median_best,bo_mean_evals_to_near_opt,random_mean_best
-boolq,0.5559633027522936,sst2+record,mnli+qnli+qqp+sst2+record,0.3678899082568807,mnli+qnli+qqp+sst2+record,0.3678899082568807,0.49434250764526,12.7,0.5295535168195721
-cola,0.6912751677852349,qnli+qqp+sst2,mnli+qnli+qqp+sst2+record,0.6855225311601151,mnli+qnli+qqp+sst2+record,0.6855225311601151,0.6903163950143816,1.4,0.6911217641418989
-mrpc,0.7622549019607843,mnli+qnli,mnli+qnli+qqp+sst2+record,0.6911764705882353,mnli+qnli+qqp+sst2+record,0.6911764705882353,0.7132352941176471,9.8,0.7417892156862755
-rte,0.7545126353790613,mnli+qqp+sst2,mnli+qnli+qqp+sst2+record,0.7148014440433214,mnli+qnli+qqp+sst2+record,0.7148014440433214,0.740072202166065,10.5,0.7488808664259915
+boolq,0.6990825688073394,qnli+record+paws+hellaswag+winogrande,qnli+record+paws+imdb+squad_v2+hellaswag+winogrande,0.6070336391437309,qnli+record+paws+imdb+squad_v2+hellaswag+winogrande,0.6070336391437309,0.689908256880734,40.5,0.6604892966360856
+cb,0.8928571428571429,mnli+qqp+record+snli+anli_r1+paws+squad_v2+winogrande,anli_r1+imdb+squad_v2+hellaswag,0.6071428571428571,anli_r1+imdb+squad_v2+hellaswag,0.6071428571428571,0.8928571428571429,34.3,0.8857142857142858
+cola,0.6740172579098753,record+imdb+hellaswag,sst2+record+anli_r1+squad_v2+hellaswag,0.5349952061361457,sst2+record+anli_r1+squad_v2+hellaswag,0.5349952061361457,0.6356663470757431,55.9,0.6439117929050815
+copa,0.77,hellaswag+winogrande,record+anli_r1+imdb+squad_v2+hellaswag+winogrande,0.65,record+anli_r1+imdb+squad_v2+hellaswag+winogrande,0.65,0.75,63.0,0.719
+cr,0.9335106382978724,sst2+record+anli_r1,sst2+imdb+squad_v2,0.925531914893617,sst2+imdb+squad_v2,0.925531914893617,0.928191489361702,5.0,0.925531914893617
+mrpc,0.6838235294117647,record+hellaswag,qnli+record+anli_r1+paws+imdb+squad_v2+hellaswag,0.3235294117647059,qnli+record+anli_r1+paws+imdb+squad_v2+hellaswag,0.3235294117647059,0.5514705882352942,63.0,0.6426470588235295
+multirc,0.7572194719471947,mnli+qnli+anli_r1+paws,record+anli_r1+paws+squad_v2+hellaswag,0.7007013201320133,record+anli_r1+paws+squad_v2+hellaswag,0.7007013201320133,0.7209158415841584,63.0,0.7278877887788779
+piqa,0.721436343852013,imdb+hellaswag+winogrande,squad_v2+hellaswag+winogrande,0.5337323177366703,squad_v2+hellaswag+winogrande,0.5337323177366703,0.6964091403699674,63.0,0.6819368879216541
+rotten_tomatoes,0.9287054409005628,sst2+record+imdb,sst2+imdb+squad_v2,0.924015009380863,sst2+imdb+squad_v2,0.924015009380863,0.9287054409005628,4.5,0.9200750469043152
+rte,0.8411552346570397,mnli+qnli+qqp+sst2+anli_r1+paws+squad_v2+winogrande,qnli+anli_r1+imdb+squad_v2+hellaswag,0.6967509025270758,qnli+anli_r1+imdb+squad_v2+hellaswag,0.6967509025270758,0.8122743682310469,63.0,0.8270758122743682
+scitail,0.8650047036688617,mnli+qqp+anli_r1+hellaswag,mnli+qnli+record+anli_r1+paws+imdb+squad_v2+hellaswag,0.5964252116650988,mnli+qnli+record+anli_r1+paws+imdb+squad_v2+hellaswag,0.5964252116650988,0.8306679209783632,57.0,0.852681091251176
+stsb,0.7050690498082994,qnli+paws+winogrande,record+anli_r1+paws+imdb+squad_v2+hellaswag,0.1991753032895395,record+anli_r1+paws+imdb+squad_v2+hellaswag,0.1991753032895395,0.6009732436034279,63.0,0.623425846203485

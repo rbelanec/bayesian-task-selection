@@ -268,6 +268,31 @@ def svamp(preds, targets, labels):
         "accuracy": accuracy,
     }
 
+def squad_v2_metric(preds):
+    """examples: the preprocessed validation split (with 'id' and 'answers').
+    generated_texts: list of raw model outputs, aligned with examples."""
+
+    metric = evaluate.load("squad_v2")
+    dataset = load_dataset("kinit/peft-factory", "squad_v2", split="validation")
+
+
+    def clean(text):
+        # keep only the first line; instruction-tuned models like to elaborate
+        return text.strip().split("\n")[0].strip()
+
+    predictions = []
+    for ex, gen in zip(dataset, preds):
+        pred = clean(gen)
+        is_no_answer = pred.lower().strip(' ."') == "unanswerable"
+        predictions.append({
+            "id": ex["id"],
+            "prediction_text": "" if is_no_answer else pred,
+            "no_answer_probability": 1.0 if is_no_answer else 0.0,
+        })
+
+    references = [{"id": ex["id"], "answers": ex["answers"]} for ex in dataset]
+    results = metric.compute(predictions=predictions, references=references)
+    return {"exact_match": results["exact"], "f1": results["f1"]}
 
 def codebleu_metric(preds, targets, _):
     return calc_codebleu(
@@ -358,10 +383,18 @@ DATASET_TO_METRIC_MAPPING = {
     "conala": {"metrics": [codebleu_metric], "labels": []},
     "codealpacapy": {"metrics": [codebleu_metric], "labels": []},
     "apps": {"metrics": [codebleu_metric], "labels": []},
+    "squad_v2": {"metrics": [squad_v2_metric], "labels": []},
+    "snli": {"metrics": [macro_f1, em], "labels": ["entailment", "neutral", "contradiction"]},
+    "anli_r1": {"metrics": [macro_f1, em], "labels": ["entailment", "neutral", "contradiction"]},
+    "paws": {"metrics": [f1, em], "labels": ["false", "true"]},
+    "imdb": {"metrics": [f1, em], "labels": ["negative", "positive"]},
+    "scitail": {"metrics": [f1, em], "labels": ["neutral", "entailment"]},
+    "cr": {"metrics": [f1, em], "labels": ["negative", "positive"]},
+    "rotten_tomatoes": {"metrics": [f1, em], "labels": ["negative", "positive"]}
 }
 
 
-datasets = ["mnli", "qnli", "qqp", "sst2", "record", "mrpc", "boolq", "rte", "cola"]
+datasets = ["mnli", "qnli", "qqp", "sst2", "record", "mrpc", "boolq", "rte", "cola", "snli", "anli_r1", "paws", "imdb", "squad_v2", "hellaswag", "winogrande", "cb", "scitail", "stsb", "cr", "rotten_tomatoes", "multirc", "copa", "piqa"]
 models = ["llama-3.2-1b-instruct"]
 peft_methods = ["lora", "base", "zero-shot"]
 
@@ -419,6 +452,161 @@ if args.gather_results:
 
     df_merged.to_csv("results.csv", index=False)
 
+    # Collapse the per-task metrics into a single performance column: exact match
+    # for classification tasks, falling back to Pearson correlation for regression
+    # tasks (e.g. STS-B). Spearman is intentionally dropped.
+    df_merged["performance"] = df_merged["exact_match"].fillna(df_merged["pearsonr"])
+
+    # squad_v2's exact match is reported on a 0-100 scale; bring it in line with
+    # the other tasks (0-1) so the table is comparable.
+    df_merged.loc[df_merged["dataset"] == "squad_v2", "performance"] /= 100
+
+    # Pivot into a datasets x PEFT-methods table (PEFT methods as rows).
+    pivot = df_merged.pivot_table(
+        index="dataset", columns="peft_method", values="performance"
+    )
+    ordered_methods = [pm for pm in peft_methods if pm in pivot.columns]
+    pivot = pivot[ordered_methods]
+
+    # Pretty display names for the LaTeX tables — shared with the figure scripts
+    # via scripts/combo_names.py so an axis label and a table header cannot drift.
+    from combo_names import DISPLAY_NAMES as DATASET_NAMES
+    METHOD_NAMES = {"lora": "LoRA", "base": "Base", "zero-shot": "Zero-shot"}
+
+    # Source vs target tasks, highlighted via cell background colour (xcolor).
+    SOURCE_TASKS = {
+        "qnli", "mnli", "snli", "anli_r1", "qqp", "paws", "sst2", "imdb",
+        "record", "squad_v2", "hellaswag", "winogrande",
+    }
+    SOURCE_COLOR = "blue!15"
+    TARGET_COLOR = "orange!20"
+
+    def header_cell(dataset):
+        color = SOURCE_COLOR if dataset in SOURCE_TASKS else TARGET_COLOR
+        return f"\\cellcolor{{{color}}}{DATASET_NAMES.get(dataset, dataset)}"
+
+    # Each table groups datasets by problem type. A table can hold several
+    # groups, each rendered as a parent column spanning its datasets. cola
+    # (linguistic acceptability) sits with the sentiment single-sentence tasks.
+    table_specs = [
+        (
+            "Entailment / NLI",
+            "nli",
+            [
+                (
+                    "Entailment / NLI",
+                    ["mnli", "qnli", "rte", "snli", "anli_r1", "cb", "scitail"],
+                ),
+            ],
+        ),
+        (
+            "Paraphrase, sentiment and linguistic acceptability",
+            "para_sent",
+            [
+                ("Paraphrase / semantic eq.", ["qqp", "mrpc", "paws", "stsb"]),
+                (
+                    "Sentiment \\& ling. acceptability",
+                    ["sst2", "imdb", "cr", "rotten_tomatoes", "cola"],
+                ),
+            ],
+        ),
+        (
+            "Question answering and commonsense reasoning",
+            "qa_cs",
+            [
+                ("Question answering", ["boolq", "record", "squad_v2", "multirc"]),
+                (
+                    "Commonsense reasoning",
+                    ["hellaswag", "winogrande", "copa", "piqa"],
+                ),
+            ],
+        ),
+    ]
+
+    def make_table(title, label, groups):
+        # Keep only datasets that are actually present, ordering source tasks
+        # before target tasks within each group (stable within each subset).
+        groups = [
+            (
+                g,
+                sorted(
+                    (d for d in ds if d in pivot.index),
+                    key=lambda d: d not in SOURCE_TASKS,
+                ),
+            )
+            for g, ds in groups
+        ]
+        groups = [(g, ds) for g, ds in groups if ds]
+        if not groups:
+            return ""
+
+        flat_cols = [d for _, ds in groups for d in ds]
+        sub = pivot.reindex(index=flat_cols).T
+
+        # Format each cell, bolding the best (highest) method per dataset column.
+        formatted = sub.copy().astype(object)
+        for c in sub.columns:
+            best = sub[c].max()
+            formatted[c] = [
+                "-"
+                if pd.isna(v)
+                else (f"\\textbf{{{v:.3f}}}" if v == best else f"{v:.3f}")
+                for v in sub[c]
+            ]
+
+        # Two-level column header: parent = problem group, child = dataset.
+        formatted.index = [METHOD_NAMES.get(m, m) for m in sub.index]
+        formatted.columns = pd.MultiIndex.from_tuples(
+            [(g, header_cell(d)) for g, ds in groups for d in ds]
+        )
+        formatted.index.name = None
+
+        tabular = formatted.to_latex(
+            column_format="l" + "c" * formatted.shape[1],
+            escape=False,
+            multicolumn=True,
+            multicolumn_format="c",
+        )
+
+        # Add booktabs \cmidrule under each parent-column header.
+        rules, start = [], 2  # column 1 is the method-name label
+        for _, ds in groups:
+            rules.append(f"\\cmidrule(lr){{{start}-{start + len(ds) - 1}}}")
+            start += len(ds)
+        lines = tabular.splitlines()
+        header_end = next(i for i, ln in enumerate(lines) if ln.strip().endswith("\\\\"))
+        lines.insert(header_end + 1, "".join(rules))
+        tabular = "\n".join(lines) + "\n"
+
+        note = "Values are exact match."
+        if any("stsb" in ds for _, ds in groups):
+            note = (
+                "Values are exact match, except for STS-B which reports "
+                "Pearson correlation."
+            )
+        note += (
+            f" Source tasks are shaded (\\colorbox{{{SOURCE_COLOR}}}{{blue}}), "
+            f"target tasks (\\colorbox{{{TARGET_COLOR}}}{{orange}})."
+        )
+
+        return (
+            "\\begin{table*}[t]\n"
+            "\\centering\n"
+            "\\resizebox{\\textwidth}{!}{%\n"
+            f"{tabular}"
+            "}\n"
+            f"\\caption{{{title}. {note}}}\n"
+            f"\\label{{tab:results_{label}}}\n"
+            "\\end{table*}\n"
+        )
+
+    tables = [make_table(title, label, groups) for title, label, groups in table_specs]
+    latex = "\n".join(t for t in tables if t)
+
+    with open("results.tex", "w") as tex_file:
+        tex_file.write(latex)
+    print(latex)
+
     exit(0)
 
 
@@ -450,7 +638,7 @@ for dataset in datasets:
 
             with open(f"{eval_dir}/compute_metrics.jsonl", "w") as outfile:
                 for metric in DATASET_TO_METRIC_MAPPING[dataset]["metrics"]:
-                    if dataset in ["record"]:
+                    if dataset in ["record", "squad_v2"]:
                         result = metric(predictions)
                     else:
                         result = metric(

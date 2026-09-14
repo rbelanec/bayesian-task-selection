@@ -43,6 +43,7 @@ from metrics import TASK_COMPUTE_METRICS
 
 from transformers import AutoModelForCausalLM
 
+import datasets
 import gc
 import numpy as np
 import os
@@ -50,8 +51,23 @@ import pandas as pd
 import time
 import torch
 
-TASKS = ["mnli", "qnli", "qqp", "sst2", "record"]
-MODELS = ["llama-3.2-3b-instruct"]
+# Every array task tokenizes the same eval sets with the same tokenizer, so they
+# all derive the *same* map fingerprint and, with caching on, race to write the
+# same `cache-<fingerprint>_0000N_of_0000M.arrow` under the shared HF_HOME. One
+# task's shard then vanishes between the move into place and the chmod that
+# follows it, and the job dies (see Dataset._get_cache_file_path). Disabling the
+# transform cache switches that path to `cache-<random>.arrow` in a per-process
+# temp dir, so two tasks can never target the same file. It does not affect
+# `load_dataset`, which still reads the prepared datasets out of HF_HOME — that
+# matters because HF_DATASETS_OFFLINE=1 leaves it no other source. The eval sets
+# are small (<2.2k rows), so re-tokenizing costs seconds against a ~46 min sweep.
+datasets.disable_caching()
+
+TASKS = [
+    "mnli", "qnli", "qqp", "sst2", "record", "snli",
+    "anli_r1", "paws", "imdb", "squad_v2", "hellaswag", "winogrande",
+]
+MODELS = ["llama-3.2-1b-instruct"]
 METHODS = ["base"]
 SEEDS = [42]
 N_EVAL_POINTS = 41
@@ -164,7 +180,11 @@ def run_eval(
 
     print("Task combinations:", task_combinations)
 
-    task_idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
+    # MaxArraySize caps SLURM_ARRAY_TASK_ID at 1000, so combinations are covered
+    # in batches: COMBO_OFFSET (set per batch by the submit wrapper) is added to
+    # the array index to get the global combination index.
+    offset = int(os.environ.get("COMBO_OFFSET", "0"))
+    task_idx = offset + int(os.environ["SLURM_ARRAY_TASK_ID"])
     selected_combination = list(task_combinations[task_idx])
     print(f"Running task combination index {task_idx}: {selected_combination}")
 

@@ -11,7 +11,7 @@
 eval "$(conda shell.bash hook)"
 conda activate pf
 
-export HF_HOME="/lustre/scratch/$USER/huggingface"
+export HF_HOME="/mnt/scratch/$USER/huggingface"
 
 llamafactory-cli train $1
 llamafactory-cli train $2

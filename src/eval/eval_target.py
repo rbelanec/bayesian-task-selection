@@ -55,7 +55,9 @@ if TYPE_CHECKING:
 
 # eval.py sits in this same directory, so when this file runs as a script
 # (sys.path[0] = src/eval) `eval` resolves to it; the merge/eval helpers are
-# shared rather than copied so the two sweeps cannot drift apart.
+# shared rather than copied so the two sweeps cannot drift apart. Importing it
+# also runs its `datasets.disable_caching()` — see the comment there; both
+# sweeps need it and this is the one place it has to happen before get_dataset.
 from eval import apply_coef_inplace, build_trainer, predict_accuracy
 from utils import get_task_combinations, create_vector_combination, plot_acc_coef_csv
 
@@ -68,8 +70,14 @@ import pandas as pd
 import time
 import torch
 
-SOURCE_TASKS = ["mnli", "qnli", "qqp", "sst2", "record"]
-TARGET_TASKS = ["mrpc", "boolq", "rte", "cola"]
+SOURCE_TASKS = [
+    "mnli", "qnli", "qqp", "sst2", "record", "snli",
+    "anli_r1", "paws", "imdb", "squad_v2", "hellaswag", "winogrande",
+]
+TARGET_TASKS = [
+    "mrpc", "boolq", "rte", "cola", "cb", "scitail",
+    "stsb", "cr", "rotten_tomatoes", "multirc", "copa", "piqa",
+]
 MODELS = ["llama-3.2-1b-instruct"]
 METHODS = ["base"]
 SEEDS = [42]
@@ -101,7 +109,11 @@ def run_eval(
     print("Source task combinations:", task_combinations)
     print("Target tasks:", TARGET_TASKS)
 
-    task_idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
+    # MaxArraySize caps SLURM_ARRAY_TASK_ID at 1000, so combinations are covered
+    # in batches: COMBO_OFFSET (set per batch by the submit wrapper) is added to
+    # the array index to get the global combination index.
+    offset = int(os.environ.get("COMBO_OFFSET", "0"))
+    task_idx = offset + int(os.environ["SLURM_ARRAY_TASK_ID"])
     selected_combination = list(task_combinations[task_idx])
     print(f"Running source combination index {task_idx}: {selected_combination}")
 

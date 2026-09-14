@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # orignal prelimianry experiments for training target tasks
-datasets=(mrpc boolq rte cola)
-# peft_methods=(lora base)
-peft_methods=(base)
+datasets=(mrpc boolq rte cola cb scitail stsb cr rotten_tomatoes multirc copa piqa)
+peft_methods=(lora base)
 models=(llama-3.2-1b-instruct)
 
 saves_output_dir="saves_bts_preliminary"

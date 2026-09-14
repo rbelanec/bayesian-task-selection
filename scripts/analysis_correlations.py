@@ -27,6 +27,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import warnings
 
@@ -38,14 +39,20 @@ import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 
+from combo_names import display_name, display_combo
 from bayesian_task_selection import (simulate_bo_on_grid, simulate_greedy_by,
                                      simulate_random_on_grid)
 
 warnings.filterwarnings("ignore")
 
 # dataviz palette, same target->color mapping as summarize_target.py's scatter
-TARGET_COLORS = {"mrpc": "#2a78d6", "boolq": "#1baf7a",
-                 "rte": "#eda100", "cola": "#e34948"}
+# One series color, not one per target. The old per-target dict covered the
+# original four targets and KeyError'd on the other eight once the sweep grew to
+# twelve — and twelve categorical hues in a single scatter cannot be made
+# distinguishable anyway (the palette caps all-pairs scatter at three slots).
+# Every figure below is a small multiple with the target in its title, so color
+# was carrying no information the panel didn't already state.
+C_SERIES = "#2a78d6"
 C_BO, C_GREEDY, C_SARPICK, C_NEUTRAL = "#4a3aa7", "#e34948", "#1baf7a", "#888780"
 
 
@@ -59,7 +66,7 @@ def savefig(fig, out_dir, name):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--summary", default="figures/target/target_summary.csv")
-    ap.add_argument("--method", default="lora")
+    ap.add_argument("--method", default="base")
     ap.add_argument("--out", default="figures/analysis")
     ap.add_argument("--seeds", type=int, default=10, help="BO repetitions")
     ap.add_argument("--n-initial", type=int, default=3)
@@ -77,6 +84,12 @@ def main():
                          "scripts/compute_target_sar.py then summarize_target.py")
     targets = sorted(df["target"].unique())
     budget = args.n_initial + args.n_iterations
+
+    # Small-multiple grid sized to the target list. A hardcoded 2x2 plotted the
+    # first four and silently dropped the rest once the sweep grew to twelve.
+    ncols = min(4, len(targets))
+    grid = (math.ceil(len(targets) / ncols), ncols)
+    figsize = (5 * grid[1], 4.5 * grid[0])
     print(f"loaded {len(df)} rows, {df['combo'].nunique()} combos, "
           f"targets: {targets}")
 
@@ -84,15 +97,17 @@ def main():
     # 1. Correlations: SAR / iso-SAR vs accuracy / NAI
     # ========================================================
     print("\n" + "=" * 80 + "\n1. CORRELATIONS\n" + "=" * 80)
-    print(f"\n{'target':<8} | {'SAR-acc':>10} {'SAR-NAI':>10} | "
+    _w = max(8, max(len(display_name(t)) for t in targets))
+    print(f"\n{'target':<{_w}} | {'SAR-acc':>10} {'SAR-NAI':>10} | "
           f"{'iso-acc':>10} {'iso-NAI':>10}")
     corr_rows = []
     for target in targets + ["overall"]:
         tdf = df if target == "overall" else df[df["target"] == target]
         r = {f"{m}_{p}": spearmanr(tdf[m], tdf[p], nan_policy="omit")[0]
              for m in ("sar", "sar_iso") for p in ("best_acc", "nai")}
-        print(f"{target:<8} | {r['sar_best_acc']:>10.4f} {r['sar_nai']:>10.4f} | "
-              f"{r['sar_iso_best_acc']:>10.4f} {r['sar_iso_nai']:>10.4f}")
+        print(f"{display_name(target):<{_w}} | {r['sar_best_acc']:>10.4f} "
+              f"{r['sar_nai']:>10.4f} | {r['sar_iso_best_acc']:>10.4f} "
+              f"{r['sar_iso_nai']:>10.4f}")
         corr_rows.append(dict(target=target, **r))
     pd.DataFrame(corr_rows).to_csv(f"{args.out}/correlations.csv", index=False)
     print(f"\nsaved: correlations.csv")
@@ -102,10 +117,12 @@ def main():
         for perf, perf_label, perf_slug in (("best_acc", "Transfer Accuracy",
                                              "accuracy"),
                                             ("nai", "NAI", "nai")):
-            fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+            fig, axes = plt.subplots(*grid, figsize=figsize, squeeze=False)
+            for ax in axes.flat[len(targets):]:
+                ax.set_visible(False)
             for ax, target in zip(axes.flat, targets):
                 tdf = df[df["target"] == target].dropna(subset=[metric, perf])
-                c = TARGET_COLORS[target]
+                c = C_SERIES
                 ax.scatter(tdf[metric], tdf[perf], c=c, s=50, alpha=0.7,
                            edgecolors="white", linewidth=0.5)
                 z = np.polyfit(tdf[metric], tdf[perf], 1)
@@ -114,12 +131,13 @@ def main():
                         linewidth=1.5)
                 rho_s = spearmanr(tdf[metric], tdf[perf])[0]
                 rho_p = pearsonr(tdf[metric], tdf[perf])[0]
-                ax.set_title(f"{target}\nSpearman $\\rho$={rho_s:.3f}, "
+                ax.set_title(f"{display_name(target)}\nSpearman $\\rho$={rho_s:.3f}, "
                              f"Pearson r={rho_p:.3f}", fontsize=12)
                 ax.set_xlabel(metric_label)
                 ax.set_ylabel(perf_label)
                 ax.grid(True, alpha=0.15)
-            fig.suptitle(f"{metric_label} vs {perf_label} per target task", y=1.0)
+            fig.suptitle(f"{metric_label} vs {perf_label}, per target task",
+                         fontsize=16, fontweight="bold", y=1.005)
             fig.tight_layout()
             savefig(fig, args.out, f"{metric}_vs_{perf_slug}_per_target")
 
@@ -128,19 +146,20 @@ def main():
     panels = [("sar", "best_acc", "SAR", "Transfer Accuracy"),
               ("sar_iso", "best_acc", "SAR (iso)", "Transfer Accuracy"),
               ("sar", "sar_iso", "SAR", "SAR (iso)")]
+    # Pooled across targets in one color: this panel's claim is about the
+    # overall SAR-accuracy relationship, and per-target identity is carried by
+    # the {metric}_vs_{perf}_per_target facets above. A twelve-entry legend here
+    # would be unreadable and its hues indistinguishable.
     for ax, (xk, yk, xl, yl) in zip(axes, panels):
-        for target in targets:
-            tdf = df[df["target"] == target]
-            ax.scatter(tdf[xk], tdf[yk], c=TARGET_COLORS[target], s=40,
-                       alpha=0.7, edgecolors="white", linewidth=0.5,
-                       label=target)
+        sub = df.dropna(subset=[xk, yk])
+        ax.scatter(sub[xk], sub[yk], c=C_SERIES, s=40,
+                   alpha=0.5, edgecolors="white", linewidth=0.5)
         rho_s = spearmanr(df[xk], df[yk], nan_policy="omit")[0]
         rho_p = pearsonr(df[xk], df[yk])[0]
         ax.set_xlabel(xl)
         ax.set_ylabel(yl)
         ax.set_title(f"{xl} vs {yl}\nSpearman $\\rho$={rho_s:.3f}, "
-                     f"Pearson r={rho_p:.3f}")
-        ax.legend(fontsize=9)
+                     f"Pearson r={rho_p:.3f}\n(all {len(targets)} targets pooled)")
         ax.grid(True, alpha=0.15)
     fig.tight_layout()
     savefig(fig, args.out, "three_panel_comparison")
@@ -170,7 +189,9 @@ def main():
     # 3. Simulated BO vs random vs greedy-SAR
     # ========================================================
     print("\n" + "=" * 80 + "\n3. SIMULATED BO (X=SAR, Y=accuracy)\n" + "=" * 80)
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(*grid, figsize=figsize, squeeze=False)
+    for ax in axes.flat[len(targets):]:
+        ax.set_visible(False)
     steps = np.arange(1, budget + 1)
     bo_summary = []
     for ax, target in zip(axes.flat, targets):
@@ -182,14 +203,19 @@ def main():
             simulate_bo_on_grid(tdf, ["sar"], args.n_initial,
                                 args.n_iterations, seed=s, fallback_col="sar")
             ["best_so_far"] for s in range(args.seeds)])
-        random_curves = simulate_random_on_grid(tdf, budget, args.random_trials)
+        # Paired with the BO runs above: same permutations, so the curves share
+        # their first n_initial steps instead of differing by sampling noise in
+        # the stretch where BO has not fit a GP yet.
+        random_curves = simulate_random_on_grid(tdf, budget,
+                                                seeds=range(args.seeds))
         greedy_curve, greedy_pick = simulate_greedy_by(tdf, "sar")
         sar_row = tdf.loc[tdf["sar"].idxmax()]
 
         ax.axhline(y=true_best, color=C_NEUTRAL, linestyle="--", linewidth=1,
                    label=f"True best ({true_best:.3f})")
         rm = random_curves.mean(axis=0)
-        ax.plot(steps, rm, color=C_NEUTRAL, linewidth=1.5, label="Random")
+        ax.plot(steps, rm, color=C_NEUTRAL, linewidth=1.5,
+                label="Random (paired)")
         ax.plot(steps[:len(greedy_curve[:budget])], greedy_curve[:budget],
                 color=C_GREEDY, linewidth=1.5, label="Greedy (by SAR)")
         ax.plot(steps, bo_curves.mean(axis=0), color=C_BO, linewidth=2,
@@ -199,9 +225,9 @@ def main():
                    label=f"argmax-SAR pick ({sar_row['best_acc']:.3f})")
         ax.axvline(x=args.n_initial + 0.5, color="#CCCCCC", linestyle=":",
                    linewidth=0.8, alpha=0.5)
-        ax.set_xlabel("Evaluations")
-        ax.set_ylabel("Best accuracy found")
-        ax.set_title(target, fontsize=13)
+        ax.set_xlabel("Mixtures evaluated")
+        ax.set_ylabel("Best transfer accuracy found")
+        ax.set_title(display_name(target), fontsize=13, fontweight="bold")
         ax.legend(fontsize=8, loc="lower right")
         ax.grid(True, alpha=0.1)
         ax.set_xlim(1, budget)
@@ -217,7 +243,8 @@ def main():
             bo_mean_evals_to_near_opt=float(np.mean(evals_to_near)),
             random_mean_best=float(rm[-1]),
         ))
-    fig.suptitle("Simulated task selection: BO vs random vs greedy", y=1.0)
+    fig.suptitle("Simulated task selection: BO vs random vs greedy-by-SAR",
+                 fontsize=16, fontweight="bold", y=1.005)
     fig.tight_layout()
     savefig(fig, args.out, "bo_convergence")
     pd.DataFrame(bo_summary).to_csv(f"{args.out}/bo_simulation_summary.csv",
@@ -243,8 +270,11 @@ def main():
         print(f"  {target:6s}: rank correlation rho={rho:.4f} (p={pval:.3e}), "
               f"top-5 overlap={len(top5_acc & top5_sar)}/5")
 
-    fig, axes = plt.subplots(1, len(targets), figsize=(5 * len(targets), 6))
-    for ax, target in zip(axes, targets):
+    fig, axes = plt.subplots(*grid, figsize=(figsize[0], 1.3 * figsize[1]),
+                             squeeze=False)
+    for ax in axes.flat[len(targets):]:
+        ax.set_visible(False)
+    for ax, target in zip(axes.flat, targets):
         tdf = (df[df["target"] == target]
                .sort_values("best_acc", ascending=False).reset_index(drop=True))
         tdf["sar_rank"] = tdf["sar"].rank(ascending=False).astype(int)
@@ -252,13 +282,14 @@ def main():
         colors = [C_BO if r <= 5 else "#D3D1C7" for r in top10["sar_rank"]]
         ax.barh(range(len(top10)), top10["best_acc"], color=colors, height=0.7)
         ax.set_yticks(range(len(top10)))
-        ax.set_yticklabels([f"{c}\n(SAR rank #{r})" for c, r in
-                            zip(top10["combo"], top10["sar_rank"])], fontsize=7)
-        ax.set_xlabel("Accuracy")
-        ax.set_title(target, fontsize=12)
+        ax.set_yticklabels([f"{display_combo(c)}\n(SAR rank #{r})" for c, r in
+                            zip(top10["combo"], top10["sar_rank"])], fontsize=6)
+        ax.set_xlabel("Transfer accuracy")
+        ax.set_title(display_name(target), fontsize=12, fontweight="bold")
         ax.invert_yaxis()
-    fig.suptitle("Top 10 subsets by accuracy (colored = also top 5 by SAR)",
-                 y=1.02)
+    fig.suptitle("Top 10 mixtures by transfer accuracy "
+                 "(coloured = also top 5 by SAR)",
+                 fontsize=16, fontweight="bold", y=1.02)
     fig.tight_layout()
     savefig(fig, args.out, "ranking_comparison")
 
@@ -272,7 +303,7 @@ def main():
         r_sar = spearmanr(tdf["sar"], tdf["best_acc"])[0]
         r_iso = spearmanr(tdf["sar_iso"], tdf["best_acc"])[0]
         better = "SAR" if abs(r_sar) > abs(r_iso) else "iso-SAR"
-        print(f"{target:<8} | {r_sar:>13.4f} {r_iso:>13.4f} | {better}")
+        print(f"{display_name(target):<{_w}} | {r_sar:>13.4f} {r_iso:>13.4f} | {better}")
 
     print(f"\ndone — figures in {args.out}")
 
